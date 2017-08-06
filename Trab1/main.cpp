@@ -7,6 +7,8 @@ GtkWidget *drawing_area;
 GtkWidget *window_widget;
 GtkWidget *window2_widget;
 GtkWidget *viewport;
+GtkWidget *txtCoordX;
+GtkWidget *txtCoordY;
 /*Clear the surface, removing the scribbles*/
 static void clear_surface (){
     cairo_t *cr;
@@ -70,6 +72,16 @@ extern "C" G_MODULE_EXPORT void btn_w2cancel_clk(){
 }
 
 extern "C" G_MODULE_EXPORT void btn_w2ok_clk(){
+    // gchar *entry_value;//this can be a global variable, too, of course
+    // entry_value = gtk_entry_get_text(//get text function
+    //                         GTK_ENTRY(//use GTK_ENTRY widget
+    //                             (GtkWidget *) user_data //cast to GtkWidget pointer
+    //                         )
+    // );
+    // const gchar *coordX = gtk_entry_get_text(GTK_ENTRY(entry1));
+    // const gchar *coordY = gtk_entry_get_text(GTK_ENTRY(entry2));
+    // printf("%s, %s\n", coordX, coordY);
+
     // GtkBuilder *gtkBuilder;
     // window2_widget = GTK_WIDGET( gtk_builder_get_object( GTK_BUILDER(gtkBuilder), "windowAddFigure") );
 
@@ -95,6 +107,11 @@ extern "C" G_MODULE_EXPORT void btn_up_clk(){
 
 }
 
+extern "C" G_MODULE_EXPORT void btn_exit_clk(){
+    gtk_widget_destroy(GTK_WIDGET(window_widget));
+
+}
+
 int main(int argc, char *argv[]){
     GtkBuilder  *gtkBuilder;
     gtk_init(&argc, &argv);
@@ -105,9 +122,14 @@ int main(int argc, char *argv[]){
     window_widget = GTK_WIDGET( gtk_builder_get_object( GTK_BUILDER(gtkBuilder), "main_window") );
     viewport = GTK_WIDGET( gtk_builder_get_object( GTK_BUILDER(gtkBuilder), "viewport1") );
     drawing_area = GTK_WIDGET( gtk_builder_get_object( GTK_BUILDER(gtkBuilder), "drawing_area") );
-    // window2_widget = GTK_WIDGET( gtk_builder_get_object( GTK_BUILDER(gtkBuilder), "windowAddFigure") );
+    // ok_w2_widget = GTK_WIDGET( gtk_builder_get_object( GTK_BUILDER(gtkBuilder), "button1") );
+
+    // txtCoordX = gtk_entry_new();
+    // txtCoordY = gtk_entry_new();
+
     g_signal_connect (drawing_area, "draw", G_CALLBACK (draw_cb), NULL);
     g_signal_connect (drawing_area,"configure-event", G_CALLBACK (configure_event_cb), NULL);
+    // g_signal_connect(G_OBJECT(ok_w2_widget),"clicked",G_CALLBACK(btn_w2ok_clk), entry);
     gtk_builder_connect_signals(gtkBuilder, NULL);
     gtk_widget_show_all(window_widget);
     gtk_main ();
