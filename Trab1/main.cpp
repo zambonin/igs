@@ -81,19 +81,14 @@ extern "C" G_MODULE_EXPORT void btn_w2cancel_clk(){
     // gtk_widget_show_all(window2_widget);
 }
 
-extern "C" G_MODULE_EXPORT void btn_w2okDot_clk(){
-
-}
-
-extern "C" G_MODULE_EXPORT void btn_w2okLine_clk(GtkWidget *widget, GtkWidget *ud){
-
+extern "C" G_MODULE_EXPORT void btn_w2okDot_clk(GtkWidget *widget, GtkWidget *ud){
     std::vector<float> vect;
     const gchar *strx = gtk_entry_get_text(GTK_ENTRY(ud));
     //CALLFUNCTOPRINT
     std::stringstream ss;
     ss << strx;
 
-    int i;
+    float i;
 
     while (ss >> i)
     {
@@ -109,17 +104,50 @@ extern "C" G_MODULE_EXPORT void btn_w2okLine_clk(GtkWidget *widget, GtkWidget *u
     for (i=0; i< vect.size(); i++)
         std::cout << vect.at(i)<<std::endl;
 
-    if (vect.size() == 2) {
-        cairo_translate(cr, vect.at(0), vect.at(1));
-        cairo_arc(cr, 0, 0, 1, 0, 2 * M_PI);
-        cairo_fill(cr);
+    cairo_translate(cr, vect.at(0), vect.at(1));
+    cairo_arc(cr, 0, 0, 1, 0, 2 * M_PI);
+    cairo_fill(cr);
+    gtk_widget_queue_draw (window_widget);
+
+
+    gtk_widget_destroy(GTK_WIDGET(window2_widget));
+}
+
+extern "C" G_MODULE_EXPORT void btn_w2okLine_clk(GtkWidget *widget, GtkWidget *ud){
+
+    std::vector<float> vect;
+    const gchar *strx = gtk_entry_get_text(GTK_ENTRY(ud));
+    //CALLFUNCTOPRINT
+    std::stringstream ss;
+    ss << strx;
+
+    float i;
+
+    while (ss >> i)
+    {
+        vect.push_back(i);
+
+        if (ss.peek() == ';')
+            ss.ignore();
     }
-    if (vect.size() == 4) {
+    cairo_t *cr;
+    cr = cairo_create (surface);
+
+
+    for (i=0; i< vect.size(); i++)
+        std::cout << vect.at(i)<<std::endl;
+
+    // if (vect.size() == 2) {
+        // cairo_translate(cr, vect.at(0), vect.at(1));
+        // cairo_arc(cr, 0, 0, 1, 0, 2 * M_PI);
+        // cairo_fill(cr);
+    // }
+    // if (vect.size() == 4) {
         // cairo_move_to(cr, coordStrx, 150);
-        cairo_move_to(cr, vect.at(0), vect.at(1));
-        cairo_line_to(cr, vect.at(2), vect.at(3));
-        cairo_stroke(cr);
-    }
+    cairo_move_to(cr, vect.at(0), vect.at(1));
+    cairo_line_to(cr, vect.at(2), vect.at(3));
+    cairo_stroke(cr);
+    // }
     gtk_widget_queue_draw (window_widget);
 
 
@@ -127,22 +155,43 @@ extern "C" G_MODULE_EXPORT void btn_w2okLine_clk(GtkWidget *widget, GtkWidget *u
 }
 
 extern "C" G_MODULE_EXPORT void btn_w2okPolygon_clk(){
-
+    //the method btn_w2addCoord_clk already added the coords to the structure
+    //hence, here we just have to draw!
 }
 
-extern "C" G_MODULE_EXPORT void btn_w2addCoord_clk(){
+extern "C" G_MODULE_EXPORT void btn_w2addCoord_clk(GtkWidget *widget, GtkWidget *entry){
+    std::vector<float> vect;
+    const gchar *strx = gtk_entry_get_text(GTK_ENTRY(entry));
+    //CALLFUNCTOPRINT
+    std::stringstream ss;
+    ss << strx;
+
+    float i;
+
+    while (ss >> i)
+    {
+        vect.push_back(i);
+
+        if (ss.peek() == ';')
+            ss.ignore();
+    }
+    //vect has the coords!
 
 }
 
 extern "C" G_MODULE_EXPORT void btn_left_clk(){
 }
 
-extern "C" G_MODULE_EXPORT void btn_zoomOut_clk(){
-
+extern "C" G_MODULE_EXPORT void btn_zoomOut_clk(GtkWidget *widget, GtkWidget *darea){
+    gtk_widget_set_size_request(darea, 200, 200);
 }
 
-extern "C" G_MODULE_EXPORT void btn_zoomIn_clk(){
-
+extern "C" G_MODULE_EXPORT void btn_zoomIn_clk(GtkWidget *widget, GtkWidget *darea){
+    gint *width;
+    gint *height;
+    // gtk_widget_get_size_request(darea, width, height);
+    // g_print("SIZE: %d, %d\n", *width, *height);
+    gtk_widget_set_size_request(darea, 2000, 2000);
 }
 
 extern "C" G_MODULE_EXPORT void btn_up_clk(){

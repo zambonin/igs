@@ -121,7 +121,7 @@
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
-                    <signal name="clicked" handler="btn_zoomIn_clk" swapped="no"/>
+                    <signal name="clicked" handler="btn_zoomIn_clk" object="drawing_area" swapped="no"/>
                   </object>
                   <packing>
                     <property name="left_attach">0</property>
@@ -134,7 +134,7 @@
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
-                    <signal name="clicked" handler="btn_zoomOut_clk" swapped="no"/>
+                    <signal name="clicked" handler="btn_zoomOut_clk" object="drawing_area" swapped="no"/>
                   </object>
                   <packing>
                     <property name="left_attach">0</property>
@@ -241,7 +241,7 @@
                           <object class="GtkLabel" id="label4">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <property name="label" translatable="yes">Coord X: </property>
+                            <property name="label" translatable="yes">Coord X;Y: </property>
                           </object>
                           <packing>
                             <property name="left_attach">0</property>
@@ -288,7 +288,7 @@
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
-                            <signal name="clicked" handler="btn_w2okLine_clk" object="entry1" swapped="no"/>
+                            <signal name="clicked" handler="btn_w2okDot_clk" object="entry1" swapped="no"/>
                           </object>
                           <packing>
                             <property name="left_attach">0</property>
@@ -333,7 +333,7 @@
                           <object class="GtkLabel" id="label6">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <property name="label" translatable="yes">Origin Coord X: </property>
+                            <property name="label" translatable="yes">Coord X;Y;Z;W : </property>
                           </object>
                           <packing>
                             <property name="left_attach">0</property>
@@ -430,7 +430,7 @@
                           <object class="GtkLabel" id="label10">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <property name="label" translatable="yes">Coord X: </property>
+                            <property name="label" translatable="yes">Coord X;Y : </property>
                           </object>
                           <packing>
                             <property name="left_attach">0</property>
@@ -460,7 +460,7 @@
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="receives_default">True</property>
-                        <signal name="clicked" handler="btn_w2addCoord_clk" swapped="no"/>
+                        <signal name="clicked" handler="btn_w2addCoord_clk" object="entry7" swapped="no"/>
                       </object>
                       <packing>
                         <property name="expand">False</property>
@@ -478,7 +478,7 @@
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
-                            <signal name="clicked" handler="btn_w2okLine_clk" object="entry7" swapped="no"/>
+                            <signal name="clicked" handler="btn_w2okPolygon_clk" swapped="no"/>
                           </object>
                           <packing>
                             <property name="left_attach">0</property>
