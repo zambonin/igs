@@ -4,7 +4,7 @@
 #include <vector>
 #include <assert.h>
 #include <math.h>
-
+// static cairo_t *ccr;
 static cairo_surface_t *surface = NULL;
 GtkWidget *drawing_area;
 GtkWidget *window_widget;
@@ -189,13 +189,17 @@ extern "C" G_MODULE_EXPORT void btn_zoomOut_clk(GtkWidget *widget, GtkWidget *da
 extern "C" G_MODULE_EXPORT void btn_zoomIn_clk(GtkWidget *widget, GtkWidget *darea){
     gint *width;
     gint *height;
+    cairo_t *cr = cairo_create(surface);
+    // *width = 200;
     // gtk_widget_get_size_request(darea, width, height);
     // g_print("SIZE: %d, %d\n", *width, *height);
     gtk_widget_set_size_request(darea, 2000, 2000);
 }
 
 extern "C" G_MODULE_EXPORT void btn_up_clk(){
-
+    cairo_t *cr = cairo_create(surface);
+    cairo_set_source_surface (cr, surface, 0, 0);
+    cairo_paint (cr);
 }
 
 extern "C" G_MODULE_EXPORT void btn_exit_clk(){
