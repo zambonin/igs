@@ -1,15 +1,24 @@
 #include <gtk/gtk.h>
 #include <iostream>
+#include <sstream>
 #include <vector>
 #include <assert.h>
+#include <math.h>
+
 static cairo_surface_t *surface = NULL;
 GtkWidget *drawing_area;
 GtkWidget *window_widget;
 GtkWidget *window2_widget;
 GtkWidget *viewport;
-GtkWidget *txtCoordX;
-GtkWidget *txtCoordY;
 GtkWidget *w2ok;
+
+struct Entry {
+    GtkWidget *arg1;
+    GtkWidget *arg2;
+    GtkWidget *arg3;
+    GtkWidget *arg4;
+};
+
 /*Clear the surface, removing the scribbles*/
 static void clear_surface (){
     cairo_t *cr;
@@ -72,23 +81,53 @@ extern "C" G_MODULE_EXPORT void btn_w2cancel_clk(){
     // gtk_widget_show_all(window2_widget);
 }
 
-extern "C" G_MODULE_EXPORT void btn_w2ok_clk(GtkWidget *widget, GtkWidget **entry){
-    GtkEntry *entry_ptr_x = (GtkEntry*)entry[0];
-    GtkEntry *entry_ptr_y = (GtkEntry*)entry[1];
+extern "C" G_MODULE_EXPORT void btn_w2okDot_clk(){
 
-    const char *x, *y;
+}
 
+extern "C" G_MODULE_EXPORT void btn_w2okLine_clk(GtkWidget *widget, GtkWidget *ud){
 
-    x = (char*)gtk_entry_get_text(entry_ptr_x);
-    y = (char*)gtk_entry_get_text(entry_ptr_y);
-    float coordx = atof(x);
-    float coordy = atof(y);
-    g_debug("%.2f, %.2f", coordx, coordy);
+    std::vector<float> vect;
+    const gchar *strx = gtk_entry_get_text(GTK_ENTRY(ud));
+    //CALLFUNCTOPRINT
+    std::stringstream ss;
+    ss << strx;
+
     int i;
-    for (i = 0; i < 2; i++)
-        free(entry[i]);
 
-    free(entry);
+    while (ss >> i)
+    {
+        vect.push_back(i);
+
+        if (ss.peek() == ';')
+            ss.ignore();
+    }
+    cairo_t *cr;
+    cr = cairo_create (surface);
+
+
+    for (i=0; i< vect.size(); i++)
+        std::cout << vect.at(i)<<std::endl;
+
+    if (vect.size() == 2) {
+        cairo_translate(cr, vect.at(0), vect.at(1));
+        cairo_arc(cr, 0, 0, 1, 0, 2 * M_PI);
+        cairo_fill(cr);
+    }
+    if (vect.size() == 4) {
+        // cairo_move_to(cr, coordStrx, 150);
+        cairo_move_to(cr, vect.at(0), vect.at(1));
+        cairo_line_to(cr, vect.at(2), vect.at(3));
+        cairo_stroke(cr);
+    }
+    gtk_widget_queue_draw (window_widget);
+
+
+    gtk_widget_destroy(GTK_WIDGET(window2_widget));
+}
+
+extern "C" G_MODULE_EXPORT void btn_w2okPolygon_clk(){
+
 }
 
 extern "C" G_MODULE_EXPORT void btn_w2addCoord_clk(){
@@ -111,7 +150,7 @@ extern "C" G_MODULE_EXPORT void btn_up_clk(){
 }
 
 extern "C" G_MODULE_EXPORT void btn_exit_clk(){
-    gtk_widget_destroy(GTK_WIDGET(window_widget));
+    gtk_main_quit();
 
 }
 
@@ -119,24 +158,31 @@ int main(int argc, char *argv[]){
     GtkBuilder  *gtkBuilder;
     gtk_init(&argc, &argv);
 
+    GtkWidget *txtStrCoordX;
+    GtkWidget *txtStrCoordY;
+    GtkWidget *txtEndCoordX;
+    GtkWidget *txtEndCoordY;
+
     gtkBuilder = gtk_builder_new();
     gtk_builder_add_from_file(gtkBuilder, "windowTrab.glade", NULL);
+    txtStrCoordX = GTK_WIDGET( gtk_builder_get_object( GTK_BUILDER(gtkBuilder), "entry3") );
 
+    // float n = 2;
+    // GtkWidget *entry = txtStrCoordX;
+    // Entry *entry;
+    // entry->arg1=txtStrCoordX;
+    // entry[0] = txtStrCoordX;
+    // entry[1] = txtStrCoordY;
+    // entry[2] = txtEndCoordX;
+    // entry[3] = txtEndCoordY;
+    // entry[4] = NULL;
     window_widget = GTK_WIDGET( gtk_builder_get_object( GTK_BUILDER(gtkBuilder), "main_window") );
     viewport = GTK_WIDGET( gtk_builder_get_object( GTK_BUILDER(gtkBuilder), "viewport1") );
     drawing_area = GTK_WIDGET( gtk_builder_get_object( GTK_BUILDER(gtkBuilder), "drawing_area") );
-    w2ok = GTK_WIDGET( gtk_builder_get_object( GTK_BUILDER(gtkBuilder), "button1") );
-    txtCoordX = GTK_WIDGET( gtk_builder_get_object( GTK_BUILDER(gtkBuilder), "entry1") );
-    txtCoordY = GTK_WIDGET( gtk_builder_get_object( GTK_BUILDER(gtkBuilder), "entry2") );
-    // txtCoordX = gtk_entry_new();
-    // txtCoordY = gtk_entry_new();
-    GtkWidget *entry[2];
-    entry[0] = txtCoordX;
-    entry[1] = txtCoordY;
-    printf("Hello");
+    w2ok = GTK_WIDGET( gtk_builder_get_object( GTK_BUILDER(gtkBuilder), "button4") );
     g_signal_connect (drawing_area, "draw", G_CALLBACK (draw_cb), NULL);
     g_signal_connect (drawing_area,"configure-event", G_CALLBACK (configure_event_cb), NULL);
-    g_signal_connect(w2ok,"clicked",G_CALLBACK(btn_w2ok_clk), entry);
+    // g_signal_connect(w2ok,"clicked",G_CALLBACK(btn_w2okLine_clk), &n);
     gtk_builder_connect_signals(gtkBuilder, NULL);
     gtk_widget_show_all(window_widget);
     gtk_main ();
