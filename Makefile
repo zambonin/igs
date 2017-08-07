@@ -4,5 +4,8 @@ LDFLAGS=$(shell pkg-config --libs gtk+-3.0)
 
 all: $(basename $(wildcard *.cpp))
 
+debug: CXXFLAGS += -g
+debug: all
+
 clean:
 	@rm $(basename $(wildcard *.cpp))
