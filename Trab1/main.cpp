@@ -4,6 +4,7 @@
 #include <vector>
 #include <assert.h>
 #include <math.h>
+#include "structures.hpp"
 // static cairo_t *ccr;
 static cairo_surface_t *surface = NULL;
 GtkWidget *drawing_area;
@@ -19,11 +20,7 @@ struct Entry {
     GtkWidget *arg4;
 };
 
-struct Window {
-    float height;
-    float width;
-}
-
+Window *window = new Window(100, 50, 100, 50);
 /*Clear the surface, removing the scribbles*/
 static void clear_surface (){
     cairo_t *cr;
@@ -152,10 +149,15 @@ extern "C" G_MODULE_EXPORT void btn_w2okLine_clk(GtkWidget *widget, GtkWidget *u
     // }
     // if (vect.size() == 4) {
         // cairo_move_to(cr, coordStrx, 150);
-    cairo_move_to(cr, vect.at(0), vect.at(1));
-    cairo_line_to(cr, vect.at(2), vect.at(3));
-    cairo_stroke(cr);
+    // cairo_move_to(cr, vect.at(0), vect.at(1));
+    // cairo_line_to(cr, vect.at(2), vect.at(3));
+    // cairo_stroke(cr);
     // }
+    coord xy1 = new coord(vect.at(0), vect.at(1));
+    coord xy2 = new coord(vect.at(2), vect.at(3));
+    dot x = new dot("dot1", xy1);
+    dot y = new dot("dot2", xy2);
+    line l1 = new line("line1", dot x, dot y);
     gtk_widget_queue_draw (window_widget);
 
 
@@ -199,19 +201,37 @@ extern "C" G_MODULE_EXPORT void btn_zoomOut_clk(GtkWidget *widget, GtkWidget *da
 }
 
 extern "C" G_MODULE_EXPORT void btn_zoomIn_clk(GtkWidget *widget, GtkWidget *darea){
-    gint *width;
-    gint *height;
-    cairo_t *cr = cairo_create(surface);
+    // gint *width;
+    // gint *height;
+    // cairo_t *cr = cairo_create(surface);
     // *width = 200;
     // gtk_widget_get_size_request(darea, width, height);
     // g_print("SIZE: %d, %d\n", *width, *height);
-    gtk_widget_set_size_request(darea, 2000, 2000);
+    // gtk_widget_set_size_request(darea, 2000, 2000);
+    list<drawable> *draw = df->getDrawList();
+    //get list of objects drawable.
+    //apply viewportTransformation on each.
+
+    for i in list {
+        viewportTransformation(window, i.x, i.y);
+    }
+    df->redraw();
+    //redraw.
+
+
 }
 
 extern "C" G_MODULE_EXPORT void btn_up_clk(){
-    cairo_t *cr = cairo_create(surface);
-    cairo_set_source_surface (cr, surface, 500, 600);
-    cairo_paint (cr);
+    list<drawable> *draw = df->getDrawList();
+    //get list of objects drawable.
+    //apply viewportTransformation on each.
+
+    for i in list {
+        viewportTransformation(window, i.x, i.y);
+    }
+    df->redraw();
+    //redraw.
+
 }
 
 extern "C" G_MODULE_EXPORT void btn_exit_clk(){

@@ -12,7 +12,7 @@ class coord {
 
 class drawable {
  public:
-  explicit drawable(std::string n) : name(n) {}
+  explicit drawable(std::string n, cairo_t *cr) : name(n) {}
 
   // TODO [arch] assuming a global surface `cr` already created somewhere else
   virtual void draw() = 0;
