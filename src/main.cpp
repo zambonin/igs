@@ -52,7 +52,7 @@ static gboolean draw_cb(GtkWidget *widget, cairo_t *cr, gpointer data) {
   return FALSE;
 }
 
-extern "C" G_MODULE_EXPORT void btn_addFigure_clk() {
+extern "C" G_MODULE_EXPORT void btn_add_figure_clk() {
   GtkBuilder *b = gtk_builder_new_from_file("src/window.glade");
   draw_widget = GTK_WIDGET(gtk_builder_get_object(b, "windowAddFigure"));
   gtk_builder_connect_signals(b, NULL);
@@ -81,6 +81,10 @@ extern "C" G_MODULE_EXPORT void btn_w2okLine_clk(GtkWidget *widget,
   std::vector<float> vect = split(ud);
   cairo_t *cr = cairo_create(surface);
 
+  // somewhere along here
+  // Line l(entry1, entry2);
+  // l.draw() or l.draw(cr)
+
   cairo_move_to(cr, vect.at(0), vect.at(1));
   cairo_line_to(cr, vect.at(2), vect.at(3));
   cairo_stroke(cr);
@@ -92,10 +96,12 @@ extern "C" G_MODULE_EXPORT void btn_w2okLine_clk(GtkWidget *widget,
 extern "C" G_MODULE_EXPORT void btn_w2okPolygon_clk() {}
 extern "C" G_MODULE_EXPORT void btn_w2ok_clk() {}
 extern "C" G_MODULE_EXPORT void btn_w2addCoord_clk() {}
-extern "C" G_MODULE_EXPORT void btn_left_clk() {}
-extern "C" G_MODULE_EXPORT void btn_zoomOut_clk() {}
-extern "C" G_MODULE_EXPORT void btn_zoomIn_clk() {}
-extern "C" G_MODULE_EXPORT void btn_up_clk() {}
+extern "C" G_MODULE_EXPORT void btn_pan_up_clk() {}
+extern "C" G_MODULE_EXPORT void btn_pan_left_clk() {}
+extern "C" G_MODULE_EXPORT void btn_pan_right_clk() {}
+extern "C" G_MODULE_EXPORT void btn_pan_down_clk() {}
+extern "C" G_MODULE_EXPORT void btn_zoom_in_clk() {}
+extern "C" G_MODULE_EXPORT void btn_zoom_out_clk() {}
 extern "C" G_MODULE_EXPORT void btn_exit_clk() { gtk_main_quit(); }
 
 int main(int argc, char *argv[]) {
