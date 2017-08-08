@@ -198,7 +198,7 @@ extern "C" G_MODULE_EXPORT void btn_zoomIn_clk(GtkWidget *widget, GtkWidget *dar
 
 extern "C" G_MODULE_EXPORT void btn_up_clk(){
     cairo_t *cr = cairo_create(surface);
-    cairo_set_source_surface (cr, surface, 0, 0);
+    cairo_set_source_surface (cr, surface, 500, 600);
     cairo_paint (cr);
 }
 
