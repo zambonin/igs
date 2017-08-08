@@ -62,7 +62,7 @@ extern "C" G_MODULE_EXPORT void btn_ok_clicked_cb(){
     gtk_widget_queue_draw (window_widget);
 }
 
-extern "C" G_MODULE_EXPORT void btn_addFigure_clk(){
+extern "C" G_MODULE_EXPORT void btn_add_figure_clk(){
     GtkBuilder *gtkBuilderAux;
     gtkBuilderAux = gtk_builder_new();
     gtk_builder_add_from_file(gtkBuilderAux, "windowTrab.glade", NULL);
@@ -133,6 +133,9 @@ extern "C" G_MODULE_EXPORT void btn_w2okLine_clk(GtkWidget *widget, GtkWidget *u
     cairo_t *cr;
     cr = cairo_create (surface);
 
+    // somewhere along here
+    // Line l(entry1, entry2);
+    // l.draw() or l.draw(cr)
 
     for (i=0; i< vect.size(); i++)
         std::cout << vect.at(i)<<std::endl;
@@ -179,8 +182,12 @@ extern "C" G_MODULE_EXPORT void btn_w2addCoord_clk(GtkWidget *widget, GtkWidget 
 
 }
 
-extern "C" G_MODULE_EXPORT void btn_left_clk(){
-}
+extern "C" G_MODULE_EXPORT void btn_pan_up_clk() {}
+extern "C" G_MODULE_EXPORT void btn_pan_left_clk() {}
+extern "C" G_MODULE_EXPORT void btn_pan_right_clk() {}
+extern "C" G_MODULE_EXPORT void btn_pan_down_clk() {}
+extern "C" G_MODULE_EXPORT void btn_zoom_in_clk() {}
+extern "C" G_MODULE_EXPORT void btn_zoom_out_clk() {}
 
 extern "C" G_MODULE_EXPORT void btn_zoomOut_clk(GtkWidget *widget, GtkWidget *darea){
     gtk_widget_set_size_request(darea, 200, 200);
@@ -204,7 +211,6 @@ extern "C" G_MODULE_EXPORT void btn_up_clk(){
 
 extern "C" G_MODULE_EXPORT void btn_exit_clk(){
     gtk_main_quit();
-
 }
 
 int main(int argc, char *argv[]){
@@ -216,8 +222,7 @@ int main(int argc, char *argv[]){
     GtkWidget *txtEndCoordX;
     GtkWidget *txtEndCoordY;
 
-    gtkBuilder = gtk_builder_new();
-    gtk_builder_add_from_file(gtkBuilder, "windowTrab.glade", NULL);
+    gtkBuilder = gtk_builder_new_from_file("windowTrab.glade");
     txtStrCoordX = GTK_WIDGET( gtk_builder_get_object( GTK_BUILDER(gtkBuilder), "entry3") );
 
     // float n = 2;
