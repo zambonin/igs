@@ -19,6 +19,11 @@ struct Entry {
     GtkWidget *arg4;
 };
 
+struct Window {
+    float height;
+    float width;
+}
+
 /*Clear the surface, removing the scribbles*/
 static void clear_surface (){
     cairo_t *cr;
