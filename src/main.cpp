@@ -1,5 +1,5 @@
+#include "structures.hpp"
 #include <cmath>
-#include <gtk/gtk.h>
 #include <iostream>
 #include <sstream>
 #include <vector>
@@ -8,19 +8,23 @@ static cairo_surface_t *surface = nullptr;
 GtkBuilder *builder;
 GtkWidget *drawing_area, *window_widget, *viewport, *draw_widget;
 
-std::vector<float> split(GtkWidget *entry) {
-  std::vector<float> vect;
-  std::stringstream ss(gtk_entry_get_text(GTK_ENTRY(entry)));
-  float i;
+std::list<coord> split(const char *input) {
+  std::list<coord> c;
+  std::list<double> tmp;
 
-  while (ss >> i) {
-    vect.push_back(i);
-    if (ss.peek() == ';') {
-      ss.ignore();
+  std::istringstream iss1(input);
+  std::string s1, s2;
+
+  while (getline(iss1, s1, ' ')) {
+    std::istringstream iss2(s1);
+    while (getline(iss2, s2, ';')) {
+      tmp.push_back(std::stod(s2));
     }
+    c.push_back(coord(tmp.front(), tmp.back()));
+    tmp.clear();
   }
 
-  return vect;
+  return c;
 }
 
 static void clear_surface() {
@@ -53,6 +57,7 @@ static gboolean draw_cb(GtkWidget *widget, cairo_t *cr, gpointer data) {
 }
 
 extern "C" G_MODULE_EXPORT void btn_add_figure_clk() {
+  // TODO can't click twice
   GtkBuilder *b = gtk_builder_new_from_file("src/window.glade");
   draw_widget = GTK_WIDGET(gtk_builder_get_object(b, "windowAddFigure"));
   gtk_builder_connect_signals(b, NULL);
@@ -63,39 +68,25 @@ extern "C" G_MODULE_EXPORT void btn_w2cancel_clk() {
   gtk_widget_destroy(GTK_WIDGET(draw_widget));
 }
 
-extern "C" G_MODULE_EXPORT void btn_w2okDot_clk(GtkWidget *widget,
-                                                GtkWidget *ud) {
-  std::vector<float> vect = split(ud);
+extern "C" G_MODULE_EXPORT void btn_draw_figure_clk(GtkWidget *widget,
+                                                    GtkWidget *entry) {
+  std::list<coord> c = split(gtk_entry_get_text(GTK_ENTRY(entry)));
   cairo_t *cr = cairo_create(surface);
+  cairo_set_line_width(cr, 2);
+  cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
 
-  cairo_translate(cr, vect.at(0), vect.at(1));
-  cairo_arc(cr, 0, 0, 1, 0, 2 * M_PI);
-  cairo_fill(cr);
+  // TODO add entry for name
+  drawable p(std::string("placeholder"), cr, c);
+
+  // TODO add drawable master list
+  // master_list.push_back(p);
+
+  p.draw();
 
   gtk_widget_queue_draw(window_widget);
   gtk_widget_destroy(draw_widget);
 }
 
-extern "C" G_MODULE_EXPORT void btn_w2okLine_clk(GtkWidget *widget,
-                                                 GtkWidget *ud) {
-  std::vector<float> vect = split(ud);
-  cairo_t *cr = cairo_create(surface);
-
-  // somewhere along here
-  // Line l(entry1, entry2);
-  // l.draw() or l.draw(cr)
-
-  cairo_move_to(cr, vect.at(0), vect.at(1));
-  cairo_line_to(cr, vect.at(2), vect.at(3));
-  cairo_stroke(cr);
-
-  gtk_widget_queue_draw(window_widget);
-  gtk_widget_destroy(draw_widget);
-}
-
-extern "C" G_MODULE_EXPORT void btn_w2okPolygon_clk() {}
-extern "C" G_MODULE_EXPORT void btn_w2ok_clk() {}
-extern "C" G_MODULE_EXPORT void btn_w2addCoord_clk() {}
 extern "C" G_MODULE_EXPORT void btn_pan_up_clk() {}
 extern "C" G_MODULE_EXPORT void btn_pan_left_clk() {}
 extern "C" G_MODULE_EXPORT void btn_pan_right_clk() {}
