@@ -252,7 +252,7 @@
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
-                            <signal name="clicked" handler="btn_w2okDot_clk" object="entry1" swapped="no"/>
+                            <signal name="clicked" handler="btn_draw_figure_clk" object="entry1" swapped="no"/>
                           </object>
                           <packing>
                             <property name="left_attach">0</property>
@@ -344,7 +344,7 @@
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
-                            <signal name="clicked" handler="btn_w2okLine_clk" object="entry3" swapped="no"/>
+                            <signal name="clicked" handler="btn_draw_figure_clk" object="entry3" swapped="no"/>
                           </object>
                           <packing>
                             <property name="left_attach">0</property>
@@ -403,11 +403,12 @@
                       <object class="GtkGrid" id="PolygonGrid">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
+                        <property name="column_homogeneous">True</property>
                         <child>
                           <object class="GtkLabel" id="label10">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <property name="label" translatable="yes">Coord X;Y : </property>
+                            <property name="label" translatable="yes">Coord.: X;Y W;Z ...</property>
                           </object>
                           <packing>
                             <property name="left_attach">0</property>
@@ -432,30 +433,17 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkButton" id="AddCoord">
-                        <property name="label" translatable="yes">Add Coordinate</property>
-                        <property name="visible">True</property>
-                        <property name="can_focus">True</property>
-                        <property name="receives_default">True</property>
-                        <signal name="clicked" handler="btn_w2addCoord_clk" object="entry7" swapped="no"/>
-                      </object>
-                      <packing>
-                        <property name="expand">False</property>
-                        <property name="fill">True</property>
-                        <property name="position">1</property>
-                      </packing>
-                    </child>
-                    <child>
                       <object class="GtkGrid" id="grid2">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
+                        <property name="column_homogeneous">True</property>
                         <child>
                           <object class="GtkButton" id="OkButton">
                             <property name="label" translatable="yes">Ok</property>
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
-                            <signal name="clicked" handler="btn_w2okPolygon_clk" swapped="no"/>
+                            <signal name="clicked" handler="btn_draw_figure_clk" object="entry7" swapped="no"/>
                           </object>
                           <packing>
                             <property name="left_attach">0</property>
