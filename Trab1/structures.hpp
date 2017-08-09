@@ -21,7 +21,6 @@ class drawable {
     : name(_name), cr(_cr), clist(_clist) {}
 
   void draw() {
-
     auto it = std::begin(clist), end = --std::end(clist);
     while (it != end) {
       cairo_move_to(cr, (*it).x, (*it).y);
@@ -41,4 +40,30 @@ class drawable {
   const std::string name;
   cairo_t *cr;
   std::list<coord> clist;
+};
+
+class window {
+ public:
+  window(double _xmax = 400, double _xmin = -400,
+      double _ymax = 400, double _ymin = -400)
+    : xmax(_xmax), xmin(_xmin), ymax(_ymax), ymin(_ymin)
+  {
+    set_limits(0, 0, 0, 0);
+  }
+
+  void set_limits(double l1, double l2, double l3, double l4) {
+    this->xmax += l1;
+    this->xmin += l2;
+    this->ymax += l3;
+    this->ymin += l4;
+  }
+
+ void zoom(double l1, double l2, double l3, double l4) {
+    this->xmax *= l1;
+    this->xmin *= l2;
+    this->ymax *= l3;
+    this->ymin *= l4;
+  }
+
+  double xmax, xmin, ymax, ymin;
 };
