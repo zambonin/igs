@@ -87,8 +87,11 @@ extern "C" G_MODULE_EXPORT void btn_w2cancel_clk() {
 
 
 coord viewport_tr(coord& c) {
-  double xvp = ((c.x - w.xmin) / (w.xmax - w.xmin)) * (200 - -200);
-  double yvp = (1 - ((c.y - w.ymin) / (w.ymax - w.ymin))) * (200 - -200);
+  int width;
+  int height;
+  gtk_widget_get_size_request(drawing_area, &width, &height);
+  double xvp = ((c.x - w.xmin) / (w.xmax - w.xmin)) * (width - 0);
+  double yvp = (1 - ((c.y - w.ymin) / (w.ymax - w.ymin))) * (height - 0);
   return coord(xvp, yvp);
 }
 
@@ -125,23 +128,27 @@ extern "C" G_MODULE_EXPORT void btn_draw_figure_clk(GtkWidget *widget, GtkWidget
   gtk_widget_destroy(GTK_WIDGET(window2_widget));
 }
 
-extern "C" G_MODULE_EXPORT void btn_pan_up_clk() {
-  w.set_limits(0, 0, 10, 10);
+extern "C" G_MODULE_EXPORT void btn_pan_up_clk(GtkWidget *widget, GtkWidget *entry) {
+  const double rate = std::atof(gtk_entry_get_text(GTK_ENTRY(entry)));
+  w.set_limits(0, 0, rate, rate);
   update_roleplay();
 }
 
-extern "C" G_MODULE_EXPORT void btn_pan_left_clk() {
-  w.set_limits(-10, -10, 0, 0);
+extern "C" G_MODULE_EXPORT void btn_pan_left_clk(GtkWidget *widget, GtkWidget *entry) {
+  const double rate = std::atof(gtk_entry_get_text(GTK_ENTRY(entry)));
+  w.set_limits(-1*rate, -1*rate, 0, 0);
   update_roleplay();
 }
 
-extern "C" G_MODULE_EXPORT void btn_pan_right_clk() {
-  w.set_limits(10, 10, 0, 0);
+extern "C" G_MODULE_EXPORT void btn_pan_right_clk(GtkWidget *widget, GtkWidget *entry) {
+  const double rate = std::atof(gtk_entry_get_text(GTK_ENTRY(entry)));
+  w.set_limits(rate, rate, 0, 0);
   update_roleplay();
 }
 
-extern "C" G_MODULE_EXPORT void btn_pan_down_clk() {
-  w.set_limits(0, 0, -10, -10);
+extern "C" G_MODULE_EXPORT void btn_pan_down_clk(GtkWidget *widget, GtkWidget *entry) {
+  const double rate = std::atof(gtk_entry_get_text(GTK_ENTRY(entry)));
+  w.set_limits(0, 0, -1*rate, -1*rate);
   update_roleplay();
 }
 
@@ -156,7 +163,13 @@ extern "C" G_MODULE_EXPORT void btn_zoom_in_clk() {
 }
 
 extern "C" G_MODULE_EXPORT void btn_exit_clk(){
-    gtk_main_quit();
+  gtk_main_quit();
+}
+
+extern "C" G_MODULE_EXPORT void btn_clear_clk(){
+  g_print("here");
+  clear_surface();
+  gtk_widget_queue_draw(window_widget);
 }
 
 int main(int argc, char *argv[]){
@@ -169,10 +182,12 @@ int main(int argc, char *argv[]){
     GtkWidget *txtEndCoordY;
 
     gtkBuilder = gtk_builder_new_from_file("windowTrab.glade");
-
+    gint width;
+    gint height;
     window_widget = GTK_WIDGET( gtk_builder_get_object( GTK_BUILDER(gtkBuilder), "main_window") );
     viewport = GTK_WIDGET( gtk_builder_get_object( GTK_BUILDER(gtkBuilder), "viewport1") );
     drawing_area = GTK_WIDGET( gtk_builder_get_object( GTK_BUILDER(gtkBuilder), "drawing_area") );
+
     w2ok = GTK_WIDGET( gtk_builder_get_object( GTK_BUILDER(gtkBuilder), "button4") );
     g_signal_connect (drawing_area, "draw", G_CALLBACK (draw_cb), NULL);
     g_signal_connect (drawing_area,"configure-event", G_CALLBACK (configure_event_cb), NULL);

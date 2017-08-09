@@ -44,8 +44,8 @@ class drawable {
 
 class window {
  public:
-  window(double _xmax = 400, double _xmin = -400,
-      double _ymax = 400, double _ymin = -400)
+  window(double _xmax = 100, double _xmin = 0,
+      double _ymax = 100, double _ymin = 0)
     : xmax(_xmax), xmin(_xmin), ymax(_ymax), ymin(_ymin)
   {
     set_limits(0, 0, 0, 0);
