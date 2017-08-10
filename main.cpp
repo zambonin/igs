@@ -6,7 +6,7 @@
 
 static cairo_surface_t *surface = nullptr;
 GtkBuilder *builder;
-GtkWidget *drawing_area, *window_widget, *viewport, *draw_widget;
+GtkWidget *drawing_area, *window_widget;
 
 std::list<drawable> master_list;
 window w;
@@ -23,7 +23,6 @@ std::list<coord> split(const char *input) {
     while (getline(iss2, s2, ';')) {
       tmp.push_back(std::stod(s2));
     }
-    // TODO funciona com um elemento só
     c.push_back(coord(tmp.front(), tmp.back()));
     tmp.clear();
   }
@@ -58,18 +57,6 @@ static gboolean draw_cb(GtkWidget *widget, cairo_t *cr, gpointer data) {
   cairo_paint(cr);
 
   return FALSE;
-}
-
-extern "C" G_MODULE_EXPORT void btn_add_figure_clk() {
-  // TODO can't click twice
-  GtkBuilder *b = gtk_builder_new_from_file("window.glade");
-  draw_widget = GTK_WIDGET(gtk_builder_get_object(b, "windowAddFigure"));
-  gtk_builder_connect_signals(b, NULL);
-  gtk_widget_show(GTK_WIDGET(draw_widget));
-}
-
-extern "C" G_MODULE_EXPORT void btn_w2cancel_clk() {
-  gtk_widget_destroy(GTK_WIDGET(draw_widget));
 }
 
 coord viewport_tr(coord &c) {
@@ -112,7 +99,7 @@ extern "C" G_MODULE_EXPORT void btn_draw_figure_clk(GtkWidget *widget,
 
   update_roleplay();
 
-  gtk_widget_destroy(draw_widget);
+  gtk_entry_set_text(GTK_ENTRY(entry), "");
 }
 
 extern "C" G_MODULE_EXPORT void btn_pan_up_clk(GtkWidget *widget,
@@ -143,13 +130,17 @@ extern "C" G_MODULE_EXPORT void btn_pan_down_clk(GtkWidget *widget,
   update_roleplay();
 }
 
-extern "C" G_MODULE_EXPORT void btn_zoom_out_clk() {
-  w.zoom(1.2, 1.2, 1.2, 1.2);
+extern "C" G_MODULE_EXPORT void btn_zoom_out_clk(GtkWidget *widget,
+                                                 GtkWidget *entry) {
+  const double rate = std::atof(gtk_entry_get_text(GTK_ENTRY(entry)));
+  w.zoom(1 + rate);
   update_roleplay();
 }
 
-extern "C" G_MODULE_EXPORT void btn_zoom_in_clk() {
-  w.zoom(0.8, 0.8, 0.8, 0.8);
+extern "C" G_MODULE_EXPORT void btn_zoom_in_clk(GtkWidget *widget,
+                                                GtkWidget *entry) {
+  const double rate = std::atof(gtk_entry_get_text(GTK_ENTRY(entry)));
+  w.zoom(1 - rate);
   update_roleplay();
 }
 
@@ -165,7 +156,6 @@ int main(int argc, char *argv[]) {
   builder = gtk_builder_new_from_file("window.glade");
 
   window_widget = GTK_WIDGET(gtk_builder_get_object(builder, "main_window"));
-  viewport = GTK_WIDGET(gtk_builder_get_object(builder, "viewport1"));
   drawing_area = GTK_WIDGET(gtk_builder_get_object(builder, "drawing_area"));
 
   g_signal_connect(drawing_area, "draw", G_CALLBACK(draw_cb), nullptr);
