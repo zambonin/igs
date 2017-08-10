@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Generated with glade 3.20.0 -->
 <interface>
-  <requires lib="gtk+" version="3.20"/>
+  <requires lib="gtk+" version="3.10"/>
   <object class="GtkAdjustment" id="adjustment1">
     <property name="upper">100</property>
     <property name="value">5</property>
@@ -19,11 +19,11 @@
     <property name="resizable">False</property>
     <property name="deletable">False</property>
     <child>
-      <object class="GtkBox">
+      <object class="GtkBox" id="main_box">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <child>
-          <object class="GtkBox">
+          <object class="GtkBox" id="control_box">
             <property name="width_request">128</property>
             <property name="visible">True</property>
             <property name="can_focus">False</property>
@@ -32,18 +32,18 @@
             <property name="border_width">5</property>
             <property name="orientation">vertical</property>
             <child>
-              <object class="GtkFrame">
+              <object class="GtkFrame" id="mov">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="label_xalign">0</property>
                 <property name="shadow_type">none</property>
                 <child>
-                  <object class="GtkAlignment">
+                  <object class="GtkAlignment" id="align1">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="left_padding">12</property>
                     <child>
-                      <object class="GtkBox">
+                      <object class="GtkBox" id="button_box">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="orientation">vertical</property>
@@ -261,7 +261,7 @@
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <child>
-                              <object class="GtkEntry">
+                              <object class="GtkEntry" id="name">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                               </object>
@@ -441,7 +441,7 @@
         </child>
       </object>
     </child>
-    <child>
+    <child type="titlebar">
       <placeholder/>
     </child>
   </object>
