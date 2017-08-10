@@ -62,19 +62,22 @@ static gboolean draw_cb(GtkWidget *widget, cairo_t *cr, gpointer data) {
 coord viewport_tr(coord &c) {
   int width, height;
   gtk_widget_get_size_request(drawing_area, &width, &height);
+
   double xvp = ((c.x - w.xmin) / (w.xmax - w.xmin)) * (width - 0);
   double yvp = (1 - ((c.y - w.ymin) / (w.ymax - w.ymin))) * (height - 0);
+
   return coord(xvp, yvp);
 }
 
-void update_roleplay() {
+void update() {
   clear_surface();
+  std::list<coord> tmp;
+
   cairo_t *cr = cairo_create(surface);
   cairo_set_line_width(cr, 2);
   cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
 
   for (auto &i : master_list) {
-    std::list<coord> tmp;
     for (auto &j : i.clist) {
       tmp.push_back(viewport_tr(j));
     }
@@ -85,69 +88,71 @@ void update_roleplay() {
   }
 }
 
-extern "C" G_MODULE_EXPORT void btn_draw_figure_clk(GtkWidget *widget,
-                                                    GtkWidget *entry) {
-  std::list<coord> c = split(gtk_entry_get_text(GTK_ENTRY(entry)));
+extern "C" G_MODULE_EXPORT void btn_draw_figure_clk() {
+  GtkEntry *name = GTK_ENTRY(gtk_builder_get_object(builder, "name")),
+           *coor = GTK_ENTRY(gtk_builder_get_object(builder, "coord"));
+
   cairo_t *cr = cairo_create(surface);
   cairo_set_line_width(cr, 2);
   cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
 
-  // TODO add entry for name
-  drawable p(std::string("placeholder"), cr, c);
-
+  std::list<coord> c = split(gtk_entry_get_text(coor));
+  drawable p(std::string(gtk_entry_get_text(name)), cr, c);
   master_list.push_back(p);
 
-  update_roleplay();
+  update();
 
-  gtk_entry_set_text(GTK_ENTRY(entry), "");
+  gtk_entry_set_text(name, "");
+  gtk_entry_set_text(coor, "");
 }
 
 extern "C" G_MODULE_EXPORT void btn_pan_up_clk(GtkWidget *widget,
                                                GtkWidget *entry) {
-  const double rate = std::atof(gtk_entry_get_text(GTK_ENTRY(entry)));
+  const double rate = std::stod(gtk_entry_get_text(GTK_ENTRY(entry)));
   w.set_limits(0, 0, rate, rate);
-  update_roleplay();
+  update();
 }
 
 extern "C" G_MODULE_EXPORT void btn_pan_left_clk(GtkWidget *widget,
                                                  GtkWidget *entry) {
-  const double rate = std::atof(gtk_entry_get_text(GTK_ENTRY(entry)));
+  const double rate = std::stod(gtk_entry_get_text(GTK_ENTRY(entry)));
   w.set_limits(-1 * rate, -1 * rate, 0, 0);
-  update_roleplay();
+  update();
 }
 
 extern "C" G_MODULE_EXPORT void btn_pan_right_clk(GtkWidget *widget,
                                                   GtkWidget *entry) {
-  const double rate = std::atof(gtk_entry_get_text(GTK_ENTRY(entry)));
+  const double rate = std::stod(gtk_entry_get_text(GTK_ENTRY(entry)));
   w.set_limits(rate, rate, 0, 0);
-  update_roleplay();
+  update();
 }
 
 extern "C" G_MODULE_EXPORT void btn_pan_down_clk(GtkWidget *widget,
                                                  GtkWidget *entry) {
-  const double rate = std::atof(gtk_entry_get_text(GTK_ENTRY(entry)));
+  const double rate = std::stod(gtk_entry_get_text(GTK_ENTRY(entry)));
   w.set_limits(0, 0, -1 * rate, -1 * rate);
-  update_roleplay();
+  update();
 }
 
 extern "C" G_MODULE_EXPORT void btn_zoom_out_clk(GtkWidget *widget,
                                                  GtkWidget *entry) {
-  const double rate = std::atof(gtk_entry_get_text(GTK_ENTRY(entry)));
+  const double rate = std::stod(gtk_entry_get_text(GTK_ENTRY(entry)));
   w.zoom(1 + rate);
-  update_roleplay();
+  update();
 }
 
 extern "C" G_MODULE_EXPORT void btn_zoom_in_clk(GtkWidget *widget,
                                                 GtkWidget *entry) {
-  const double rate = std::atof(gtk_entry_get_text(GTK_ENTRY(entry)));
+  const double rate = std::stod(gtk_entry_get_text(GTK_ENTRY(entry)));
   w.zoom(1 - rate);
-  update_roleplay();
+  update();
 }
 
 extern "C" G_MODULE_EXPORT void btn_exit_clk() { gtk_main_quit(); }
 
 extern "C" G_MODULE_EXPORT void btn_clear_clk() {
   clear_surface();
+  master_list.clear();
   gtk_widget_queue_draw(window_widget);
 }
 
