@@ -58,11 +58,11 @@ class window {
     this->ymin += l4;
   }
 
- void zoom(double l1, double l2, double l3, double l4) {
-    this->xmax *= l1;
-    this->xmin *= l2;
-    this->ymax *= l3;
-    this->ymin *= l4;
+ void zoom(double r) {
+    this->xmax *= r;
+    this->xmin *= r;
+    this->ymax *= r;
+    this->ymin *= r;
   }
 
   double xmax, xmin, ymax, ymin;
