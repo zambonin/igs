@@ -180,7 +180,19 @@ extern "C" G_MODULE_EXPORT void btn_exit_clk() {
 extern "C" G_MODULE_EXPORT void btn_clear_clk() {
   clear_surface();
   master_list.clear();
+  w.xmax = 100;
+  w.xmin = 0;
+  w.ymax = 100;
+  w.ymin = 0;
   gtk_widget_queue_draw(window_widget);
+}
+
+extern "C" G_MODULE_EXPORT void btn_center_clk(){
+    w.xmax = 100;
+    w.xmin = 0;
+    w.ymax = 100;
+    w.ymin = 0;
+    update();
 }
 
 int main(int argc, char *argv[]) {
