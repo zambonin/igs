@@ -1,15 +1,14 @@
-#include <algorithm>
-#include <gtk/gtk.h>
-#include <iostream>
-#include <sstream>
 #include "structures.hpp"
+
+#include <map>
+#include <sstream>
 
 static cairo_surface_t *surface = nullptr;
 
 GtkWidget *drawing_area, *window_widget;
 GtkBuilder *builder;
 
-std::list<drawable> master_list;
+std::map<std::string, drawable> objects;
 window w;
 
 std::list<coord> split(const char* input) {
@@ -27,7 +26,7 @@ std::list<coord> split(const char* input) {
         tmp.push_back(std::stod(s2));
       } catch (const std::invalid_argument& ia) {}
     }
-    c.push_back(coord(tmp.front(), tmp.back()));
+    c.emplace_back(coord(tmp.front(), tmp.back()));
     if (tmp.size() != 2) {
       c.clear();
       return c;
@@ -51,7 +50,7 @@ static void clear_surface() {
 static gboolean configure_event_cb(GtkWidget *widget,
     GdkEventConfigure *event, gpointer data) {
 
-  if (surface) {
+  if (surface != nullptr) {
     cairo_surface_destroy(surface);
   }
 
@@ -73,28 +72,16 @@ static gboolean draw_cb(GtkWidget *widget, cairo_t *cr, gpointer data) {
 
 }
 
-coord viewport_tr(coord& c) {
-
-  int width, height;
-  gtk_widget_get_size_request(drawing_area, &width, &height);
-
-  double xvp = ((c.x - w.xmin) / (w.xmax - w.xmin)) * (width - 0);
-  double yvp = (1 - ((c.y - w.ymin) / (w.ymax - w.ymin))) * (height - 0);
-
-  return coord(xvp, yvp);
-
-}
-
 void update() {
 
   clear_surface();
-  for (auto& obj : master_list) {
-    std::list<coord> tr = obj.clist;
-    std::transform(tr.begin(), tr.end(), tr.begin(), viewport_tr);
-    drawable d(obj.name + "_copy", cairo_create(surface), tr);
-    d.draw();
-    gtk_widget_queue_draw(window_widget);
+  cairo_t *cr = cairo_create(surface);
+  for (auto& obj : objects) {
+    obj.second.viewport(drawing_area, w);
+    obj.second.draw(cr);
   }
+  gtk_widget_queue_draw(window_widget);
+  cairo_destroy(cr);
 
 }
 
@@ -107,9 +94,9 @@ extern "C" G_MODULE_EXPORT void btn_draw_figure_clk() {
   const char *coord_entry = gtk_entry_get_text(coor);
   std::list<coord> c = split(coord_entry);
 
-  if (name_entry.size() && c.size()) {
-    drawable d(std::string(name_entry), cairo_create(surface), c);
-    master_list.push_back(d);
+  if (!name_entry.empty() && !c.empty()) {
+    std::string s(name_entry);
+    objects.insert(std::pair<std::string, drawable>(s, drawable(s, c)));
     update();
   }
 
@@ -178,7 +165,7 @@ extern "C" G_MODULE_EXPORT void btn_exit_clk() {
 
 extern "C" G_MODULE_EXPORT void btn_clear_clk() {
   clear_surface();
-  master_list.clear();
+  objects.clear();
   w.reset();
   gtk_widget_queue_draw(window_widget);
 }
