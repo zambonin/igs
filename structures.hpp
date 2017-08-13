@@ -5,6 +5,7 @@
 #include <iostream>
 #include <list>
 #include <string>
+#include <vector>
 
 class window {
 public:
@@ -51,6 +52,64 @@ public:
   friend std::ostream &operator<<(std::ostream &os, const coord &c) {
     return os << "x: " << c.x << " y: " << c.y << std::endl;
   }
+};
+
+class matrix {
+ public:
+  matrix(int _l = 3, int _c = 3)
+    : l(_l), c(_c), elem(_l, std::vector<double>(_c, 0)) {}
+
+  matrix(std::vector<std::vector<double>> e)
+    : l(e.size()), c(e[0].size()), elem(e) {}
+
+  std::vector<double>& operator[](int i) {
+    return elem[i];
+  }
+
+  const std::vector<double>& operator[](int i) const {
+    return elem[i];
+  }
+
+  matrix operator+(matrix& m) {
+    if (l == m.l && c == m.c) {
+      matrix r(3, 3);
+      for (int i = 0; i < l; ++i) {
+        for (int j = 0; i < c; ++i) {
+          r[i][j] += elem[i][j] + m[i][j];
+        }
+      }
+      return r;
+    } else {
+      return *this;
+    }
+  }
+
+  matrix operator*(matrix m) {
+    matrix r(l, m.c);
+    for (int i = 0; i < l; ++i) {
+      for (int j = 0; j < m.c; ++j) {
+        double mul = 0;
+        for (int k = 0; k < m.l; ++k) {
+          mul += elem[i][k] * m[k][j];
+        }
+        r[i][j] = mul;
+      }
+    }
+    return r;
+  }
+
+  friend std::ostream& operator<<(std::ostream& os, const matrix& m) {
+    for (int i = 0; i < m.l; ++i) {
+      for (int j = 0; j < m.c; ++j) {
+        os << m[i][j] << " ";
+      }
+      os << std::endl;
+    }
+    return os;
+  }
+
+  int l, c;
+  std::vector<std::vector<double>> elem;
 };
 
 class drawable {
