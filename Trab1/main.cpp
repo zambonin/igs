@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <gtk/gtk.h>
 #include <iostream>
 #include <sstream>
@@ -22,9 +23,15 @@ std::list<coord> split(const char* input) {
   while(getline(iss1, s1, ' ')) {
     std::istringstream iss2(s1);
     while(getline(iss2, s2, ';')) {
-      tmp.push_back(std::stod(s2));
+      try {
+        tmp.push_back(std::stod(s2));
+      } catch (const std::invalid_argument& ia) {}
     }
     c.push_back(coord(tmp.front(), tmp.back()));
+    if (tmp.size() != 2) {
+      c.clear();
+      return c;
+    }
     tmp.clear();
   }
 
@@ -45,12 +52,12 @@ static gboolean configure_event_cb(GtkWidget *widget,
     GdkEventConfigure *event, gpointer data) {
 
   if (surface) {
-    cairo_surface_destroy (surface);
+    cairo_surface_destroy(surface);
   }
 
   surface = gdk_window_create_similar_surface(gtk_widget_get_window(widget),
-      CAIRO_CONTENT_COLOR, gtk_widget_get_allocated_width (widget),
-      gtk_widget_get_allocated_height (widget));
+      CAIRO_CONTENT_COLOR, gtk_widget_get_allocated_width(widget),
+      gtk_widget_get_allocated_height(widget));
   clear_surface();
 
   return TRUE;
@@ -81,19 +88,11 @@ coord viewport_tr(coord& c) {
 void update() {
 
   clear_surface();
-  std::list<coord> tmp;
-
-  cairo_t *cr = cairo_create(surface);
-  cairo_set_line_width(cr, 2);
-  cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
-
-  for (auto& i : master_list) {
-    for (auto& j : i.clist) {
-      tmp.push_back(viewport_tr(j));
-    }
-    drawable d(std::string("copy"), cr, tmp);
+  for (auto& obj : master_list) {
+    std::list<coord> tr = obj.clist;
+    std::transform(tr.begin(), tr.end(), tr.begin(), viewport_tr);
+    drawable d(obj.name + "_copy", cairo_create(surface), tr);
     d.draw();
-    tmp.clear();
     gtk_widget_queue_draw(window_widget);
   }
 
@@ -104,15 +103,15 @@ extern "C" G_MODULE_EXPORT void btn_draw_figure_clk() {
   GtkEntry *name = GTK_ENTRY(gtk_builder_get_object(builder, "name")),
            *coor = GTK_ENTRY(gtk_builder_get_object(builder, "coord"));
 
-  cairo_t *cr = cairo_create(surface);
-  cairo_set_line_width(cr, 2);
-  cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
+  std::string name_entry = std::string(gtk_entry_get_text(name));
+  const char *coord_entry = gtk_entry_get_text(coor);
+  std::list<coord> c = split(coord_entry);
 
-  std::list<coord> c = split(gtk_entry_get_text(coor));
-  drawable p(std::string(gtk_entry_get_text(name)), cr, c);
-  master_list.push_back(p);
-
-  update();
+  if (name_entry.size() && c.size()) {
+    drawable d(std::string(name_entry), cairo_create(surface), c);
+    master_list.push_back(d);
+    update();
+  }
 
   gtk_entry_set_text(name, "");
   gtk_entry_set_text(coor, "");
@@ -180,19 +179,13 @@ extern "C" G_MODULE_EXPORT void btn_exit_clk() {
 extern "C" G_MODULE_EXPORT void btn_clear_clk() {
   clear_surface();
   master_list.clear();
-  w.xmax = 100;
-  w.xmin = 0;
-  w.ymax = 100;
-  w.ymin = 0;
+  w.reset();
   gtk_widget_queue_draw(window_widget);
 }
 
-extern "C" G_MODULE_EXPORT void btn_center_clk(){
-    w.xmax = 100;
-    w.xmin = 0;
-    w.ymax = 100;
-    w.ymin = 0;
-    update();
+extern "C" G_MODULE_EXPORT void btn_center_clk() {
+  w.reset();
+  update();
 }
 
 int main(int argc, char *argv[]) {

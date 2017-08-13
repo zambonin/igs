@@ -28,6 +28,8 @@ class drawable {
       cairo_line_to(cr, (*it).x, (*it).y);
     }
 
+    cairo_set_line_width(cr, 2);
+    cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
     cairo_move_to(cr, clist.front().x, clist.front().y);
     cairo_line_to(cr, clist.back().x, clist.back().y);
     cairo_stroke(cr);
@@ -63,6 +65,13 @@ class window {
     this->xmin *= r;
     this->ymax *= r;
     this->ymin *= r;
+  }
+
+  void reset() {
+    this->xmax = 100;
+    this->xmin = 0;
+    this->ymax = 100;
+    this->ymin = 0;
   }
 
   double xmax, xmin, ymax, ymin;
