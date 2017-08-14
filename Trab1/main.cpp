@@ -5,193 +5,234 @@
 
 static cairo_surface_t *surface = nullptr;
 
-GtkWidget *drawing_area, *window_widget;
+GtkWidget *drawing_area, *window_widget, *combo;
+GtkListStore *glist;
 GtkBuilder *builder;
+GtkTreeIter iter;
+GtkTreePath *path;
 
 std::map<std::string, drawable> objects;
 window w;
 
 std::list<coord> split(const char* input) {
 
-  std::list<coord> c;
-  std::list<double> tmp;
+    std::list<coord> c;
+    std::list<double> tmp;
 
-  std::istringstream iss1(input);
-  std::string s1, s2;
+    std::istringstream iss1(input);
+    std::string s1, s2;
 
-  while(getline(iss1, s1, ' ')) {
-    std::istringstream iss2(s1);
-    while(getline(iss2, s2, ';')) {
-      try {
-        tmp.push_back(std::stod(s2));
-      } catch (const std::invalid_argument& ia) {}
+    while(getline(iss1, s1, ' ')) {
+        std::istringstream iss2(s1);
+        while(getline(iss2, s2, ';')) {
+            try {
+                tmp.push_back(std::stod(s2));
+            } catch (const std::invalid_argument& ia) {}
+        }
+        c.emplace_back(coord(tmp.front(), tmp.back()));
+        if (tmp.size() != 2) {
+            c.clear();
+            return c;
+        }
+        tmp.clear();
     }
-    c.emplace_back(coord(tmp.front(), tmp.back()));
-    if (tmp.size() != 2) {
-      c.clear();
-      return c;
-    }
-    tmp.clear();
-  }
 
-  return c;
+    return c;
 
 }
 
 static void clear_surface() {
 
-  cairo_t *cr = cairo_create(surface);
-  cairo_set_source_rgb(cr, 1, 1, 1);
-  cairo_paint(cr);
-  cairo_destroy(cr);
+    cairo_t *cr = cairo_create(surface);
+    cairo_set_source_rgb(cr, 1, 1, 1);
+    cairo_paint(cr);
+    cairo_destroy(cr);
 
 }
 
 static gboolean configure_event_cb(GtkWidget *widget,
-    GdkEventConfigure *event, gpointer data) {
+        GdkEventConfigure *event, gpointer data) {
 
-  if (surface != nullptr) {
-    cairo_surface_destroy(surface);
-  }
+    if (surface != nullptr) {
+        cairo_surface_destroy(surface);
+    }
 
-  surface = gdk_window_create_similar_surface(gtk_widget_get_window(widget),
-      CAIRO_CONTENT_COLOR, gtk_widget_get_allocated_width(widget),
-      gtk_widget_get_allocated_height(widget));
-  clear_surface();
+    surface = gdk_window_create_similar_surface(gtk_widget_get_window(widget),
+            CAIRO_CONTENT_COLOR, gtk_widget_get_allocated_width(widget),
+            gtk_widget_get_allocated_height(widget));
+    clear_surface();
 
-  return TRUE;
+    return TRUE;
 
 }
 
 static gboolean draw_cb(GtkWidget *widget, cairo_t *cr, gpointer data) {
 
-  cairo_set_source_surface(cr, surface, 0, 0);
-  cairo_paint(cr);
+    cairo_set_source_surface(cr, surface, 0, 0);
+    cairo_paint(cr);
 
-  return FALSE;
+    return FALSE;
 
 }
 
 void update() {
 
-  clear_surface();
-  cairo_t *cr = cairo_create(surface);
-  for (auto& obj : objects) {
-    obj.second.viewport(drawing_area, w);
-    obj.second.draw(cr);
-  }
-  gtk_widget_queue_draw(window_widget);
-  cairo_destroy(cr);
+    clear_surface();
+    cairo_t *cr = cairo_create(surface);
+    for (auto& obj : objects) {
+        obj.second.viewport(drawing_area, w);
+        obj.second.draw(cr);
+    }
+    gtk_widget_queue_draw(window_widget);
+    cairo_destroy(cr);
+
+}
+
+extern "C" G_MODULE_EXPORT void change_selection() {
+    path = gtk_tree_path_new_from_string ("0");
+    gtk_tree_model_get_iter(GTK_TREE_MODEL (glist), &iter, path);
+    const char* value;
+    gtk_tree_model_get(GTK_TREE_MODEL(glist), &iter, 0, &value, -1);
+    std::cout << value << std::endl;
 
 }
 
 extern "C" G_MODULE_EXPORT void btn_draw_figure_clk() {
 
-  GtkEntry *name = GTK_ENTRY(gtk_builder_get_object(builder, "name")),
-           *coor = GTK_ENTRY(gtk_builder_get_object(builder, "coord"));
+    GtkEntry *name = GTK_ENTRY(gtk_builder_get_object(builder, "name")),
+             *coor = GTK_ENTRY(gtk_builder_get_object(builder, "coord"));
 
-  std::string name_entry = std::string(gtk_entry_get_text(name));
-  const char *coord_entry = gtk_entry_get_text(coor);
-  std::list<coord> c = split(coord_entry);
+    std::string name_entry = std::string(gtk_entry_get_text(name));
 
-  if (!name_entry.empty() && !c.empty()) {
-    std::string s(name_entry);
-    objects.insert(std::pair<std::string, drawable>(s, drawable(s, c)));
-    update();
-  }
+    gtk_list_store_append(glist, &iter);
+    gtk_list_store_set(glist, &iter, 0, gtk_entry_get_text(name), -1);
 
-  gtk_entry_set_text(name, "");
-  gtk_entry_set_text(coor, "");
+    const char *coord_entry = gtk_entry_get_text(coor);
+    std::list<coord> c = split(coord_entry);
+
+    if (!name_entry.empty() && !c.empty()) {
+        std::string s(name_entry);
+        objects.insert(std::pair<std::string, drawable>(s, drawable(s, c)));
+        update();
+    }
+
+    gtk_entry_set_text(name, "");
+    gtk_entry_set_text(coor, "");
+
 
 }
 
 extern "C" G_MODULE_EXPORT void btn_pan_up_clk(
-    GtkWidget *widget, GtkWidget *entry) {
+        GtkWidget *widget, GtkWidget *entry) {
 
-  const double rate = std::stod(gtk_entry_get_text(GTK_ENTRY(entry)));
-  w.set_limits(0, 0, rate, rate);
-  update();
+    const double rate = std::stod(gtk_entry_get_text(GTK_ENTRY(entry)));
+    w.set_limits(0, 0, rate, rate);
+    update();
 
 }
 
 extern "C" G_MODULE_EXPORT void btn_pan_left_clk(
-    GtkWidget *widget, GtkWidget *entry) {
+        GtkWidget *widget, GtkWidget *entry) {
 
-  const double rate = std::stod(gtk_entry_get_text(GTK_ENTRY(entry)));
-  w.set_limits(-1 * rate, -1 * rate, 0, 0);
-  update();
+    const double rate = std::stod(gtk_entry_get_text(GTK_ENTRY(entry)));
+    w.set_limits(-1 * rate, -1 * rate, 0, 0);
+    update();
 
 }
 
 extern "C" G_MODULE_EXPORT void btn_pan_right_clk(
-    GtkWidget *widget, GtkWidget *entry) {
+        GtkWidget *widget, GtkWidget *entry) {
 
-  const double rate = std::stod(gtk_entry_get_text(GTK_ENTRY(entry)));
-  w.set_limits(rate, rate, 0, 0);
-  update();
+    const double rate = std::stod(gtk_entry_get_text(GTK_ENTRY(entry)));
+    w.set_limits(rate, rate, 0, 0);
+    update();
 
 }
 
 extern "C" G_MODULE_EXPORT void btn_pan_down_clk(
-    GtkWidget *widget, GtkWidget *entry) {
+        GtkWidget *widget, GtkWidget *entry) {
 
-  const double rate = std::stod(gtk_entry_get_text(GTK_ENTRY(entry)));
-  w.set_limits(0, 0, -1 * rate, -1 * rate);
-  update();
+    const double rate = std::stod(gtk_entry_get_text(GTK_ENTRY(entry)));
+    w.set_limits(0, 0, -1 * rate, -1 * rate);
+    update();
 
 }
 
 extern "C" G_MODULE_EXPORT void btn_zoom_out_clk(
-    GtkWidget *widget, GtkWidget *entry) {
+        GtkWidget *widget, GtkWidget *entry) {
 
-  const double rate = std::stod(gtk_entry_get_text(GTK_ENTRY(entry)));
-  w.zoom(1 + rate);
-  update();
+    const double rate = std::stod(gtk_entry_get_text(GTK_ENTRY(entry)));
+    w.zoom(1 + rate);
+    update();
 
 }
 
 extern "C" G_MODULE_EXPORT void btn_zoom_in_clk(
-    GtkWidget *widget, GtkWidget *entry) {
+        GtkWidget *widget, GtkWidget *entry) {
 
-  const double rate = std::stod(gtk_entry_get_text(GTK_ENTRY(entry)));
-  w.zoom(1 - rate);
-  update();
+    const double rate = std::stod(gtk_entry_get_text(GTK_ENTRY(entry)));
+    w.zoom(1 - rate);
+    update();
 
 }
 
 extern "C" G_MODULE_EXPORT void btn_exit_clk() {
-  gtk_main_quit();
+    gtk_main_quit();
 }
 
 extern "C" G_MODULE_EXPORT void btn_clear_clk() {
-  clear_surface();
-  objects.clear();
-  w.reset();
-  gtk_widget_queue_draw(window_widget);
+    clear_surface();
+    objects.clear();
+    w.reset();
+    gtk_widget_queue_draw(window_widget);
 }
 
 extern "C" G_MODULE_EXPORT void btn_center_clk() {
-  w.reset();
-  update();
+    w.reset();
+    update();
 }
 
 int main(int argc, char *argv[]) {
 
-  gtk_init(&argc, &argv);
+    gtk_init(&argc, &argv);
 
-  builder = gtk_builder_new_from_file("src/window.glade");
-  window_widget = GTK_WIDGET(gtk_builder_get_object(builder, "main_window"));
-  drawing_area = GTK_WIDGET(gtk_builder_get_object(builder, "drawing_area"));
+    builder = gtk_builder_new_from_file("src/window.glade");
+    window_widget = GTK_WIDGET(gtk_builder_get_object(builder, "main_window"));
+    drawing_area = GTK_WIDGET(gtk_builder_get_object(builder, "drawing_area"));
 
-  g_signal_connect(drawing_area, "draw",
-      G_CALLBACK(draw_cb), nullptr);
-  g_signal_connect(drawing_area, "configure-event",
-      G_CALLBACK(configure_event_cb), nullptr);
+    glist = GTK_LIST_STORE(gtk_builder_get_object(builder, "liststore1"));
+    combo = GTK_WIDGET(gtk_builder_get_object(builder, "comboBox"));
 
-  gtk_builder_connect_signals(builder, nullptr);
-  gtk_widget_show_all(window_widget);
-  gtk_main();
+    GType types = G_TYPE_STRING;
 
-  return 0;
+    gtk_list_store_set_column_types(glist, 1, &types);
+
+    // gtk_list_store_append(glist, &iter);
+    // gtk_list_store_set(glist, &iter, 0, "foo", -1);
+
+    // gtk_list_store_append(glist, &iter);
+    // gtk_list_store_set(glist, &iter, 0, "test", -1);
+
+
+    // gtk_list_store_append(glist, &iter);
+    // gtk_list_store_set(glist, &iter, 0, "test1", -1);
+
+
+    gtk_combo_box_set_model (GTK_COMBO_BOX (combo), GTK_TREE_MODEL(glist));
+
+    GtkCellRenderer *cell = gtk_cell_renderer_text_new();
+    gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), cell, TRUE );
+    gtk_cell_layout_set_attributes( GTK_CELL_LAYOUT( combo ), cell, "text", 0, NULL );
+
+    g_signal_connect(drawing_area, "draw",
+            G_CALLBACK(draw_cb), nullptr);
+    g_signal_connect(drawing_area, "configure-event",
+            G_CALLBACK(configure_event_cb), nullptr);
+
+    gtk_builder_connect_signals(builder, nullptr);
+    gtk_widget_show_all(window_widget);
+    gtk_main();
+
+    return 0;
 
 }

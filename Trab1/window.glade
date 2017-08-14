@@ -32,6 +32,18 @@
             <property name="border_width">5</property>
             <property name="orientation">vertical</property>
             <child>
+              <object class="GtkComboBox" id="comboBox">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <signal name="changed" handler="change_selection" swapped="no"/>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
               <object class="GtkFrame" id="mov">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
@@ -235,7 +247,7 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">0</property>
+                <property name="position">1</property>
               </packing>
             </child>
             <child>
@@ -339,7 +351,7 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">1</property>
+                <property name="position">2</property>
               </packing>
             </child>
             <child>
@@ -414,7 +426,7 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">False</property>
-                <property name="position">2</property>
+                <property name="position">3</property>
               </packing>
             </child>
           </object>
@@ -457,5 +469,11 @@
     <child type="titlebar">
       <placeholder/>
     </child>
+  </object>
+  <object class="GtkListStore" id="liststore1">
+    <columns>
+      <!-- column-name gchar1 -->
+      <column type="gchar"/>
+    </columns>
   </object>
 </interface>
