@@ -79,14 +79,15 @@ void update() {
 extern "C" G_MODULE_EXPORT void btn_draw_figure_clk() {
   GtkEntry *name = GTK_ENTRY(gtk_builder_get_object(builder, "name")),
            *coor = GTK_ENTRY(gtk_builder_get_object(builder, "coord"));
+  GtkComboBoxText *combo =
+      GTK_COMBO_BOX_TEXT(gtk_builder_get_object(builder, "comboBox"));
 
-  std::string name_entry = std::string(gtk_entry_get_text(name));
-  const char *coord_entry = gtk_entry_get_text(coor);
-  std::list<coord> c = split(coord_entry);
+  std::string s(gtk_entry_get_text(name));
+  std::list<coord> c = split(gtk_entry_get_text(coor));
 
-  if (!name_entry.empty() && !c.empty()) {
-    std::string s(name_entry);
-    objects.insert(std::pair<std::string, drawable>(s, drawable(s, c)));
+  if (!s.empty() && !c.empty() && objects.count(s) == 0) {
+    gtk_combo_box_text_append(combo, nullptr, s.c_str());
+    objects.insert({s, drawable(s, c)});
     update();
   }
 
@@ -142,11 +143,29 @@ extern "C" G_MODULE_EXPORT void btn_clear_clk() {
   clear_surface();
   objects.clear();
   w.reset();
+  gtk_combo_box_text_remove_all(
+      GTK_COMBO_BOX_TEXT(gtk_builder_get_object(builder, "comboBox")));
   gtk_widget_queue_draw(window_widget);
 }
 
 extern "C" G_MODULE_EXPORT void btn_center_clk() {
   w.reset();
+  update();
+}
+
+extern "C" G_MODULE_EXPORT void btn_rotate_clk() {}
+extern "C" G_MODULE_EXPORT void btn_scale_clk() {}
+extern "C" G_MODULE_EXPORT void btn_trans_clk() {}
+
+extern "C" G_MODULE_EXPORT void btn_delete_figure_clk() {
+  GtkComboBoxText *combo =
+      GTK_COMBO_BOX_TEXT(gtk_builder_get_object(builder, "comboBox"));
+  gchar *obj = gtk_combo_box_text_get_active_text(combo);
+  if (obj) {
+    gtk_combo_box_text_remove(combo,
+                              gtk_combo_box_get_active(GTK_COMBO_BOX(combo)));
+    objects.erase(obj);
+  }
   update();
 }
 
