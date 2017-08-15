@@ -5,7 +5,7 @@
 #include <iostream>
 #include <list>
 #include <string>
-
+#include "matrix.h"
 class window {
  public:
   explicit window(double _xmax = 100, double _xmin = 0,
@@ -91,6 +91,17 @@ class drawable {
       (*it2).x = (((*it1).x - w.xmin) / (w.xmax - w.xmin)) * (wid - 0);
       (*it2).y = (1 - (((*it1).y - w.ymin) / (w.ymax - w.ymin))) * (hei - 0);
     }
+  }
+
+  void transform(matrix<double> m) {
+      matrix<double> c(1,3);
+      c(0,0) = x;
+      c(0,1) = y;
+      c(0,2) = z;
+      matrix<double> res = c*m;
+      x = res(0,0);
+      y = res(0,1);
+      z = res(0,2);
   }
 
   const std::string name;

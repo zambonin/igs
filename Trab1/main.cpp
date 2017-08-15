@@ -10,6 +10,7 @@ GtkListStore *glist;
 GtkBuilder *builder;
 GtkTreeIter iter;
 GtkTreePath *path;
+char* selectedObj;
 
 std::map<std::string, drawable> objects;
 window w;
@@ -93,8 +94,68 @@ extern "C" G_MODULE_EXPORT void change_selection() {
     gtk_tree_model_get_iter(GTK_TREE_MODEL (glist), &iter, path);
     const char* value;
     gtk_tree_model_get(GTK_TREE_MODEL(glist), &iter, 0, &value, -1);
-    std::cout << value << std::endl;
+    selectedObj = value;
+    // std::cout << value << std::endl;
 
+}
+
+extern "C" G_MODULE_EXPORT void btn_trans_clk(GtkWidget *widget, GtkWidget *entry) {
+    GtkEntry *tranferVect = GTK_ENTRY(gtk_builder_get_object(builder, "transferVector"));
+    std::list<coord> c = split(gtk_entry_get_text(transferVect));
+
+    //TODO Create matrix method for creation of base.
+    matrix<double> base(3,3);
+    base(0,0) = 1;
+    base(0,1) = 0;
+    base(0,2) = 0;
+    base(1,0) = 0;
+    base(1,1) = 1;
+    base(1,2) = 0;
+    auto it = std::begin(c), end = --std::end(c);
+    while (it != end) {
+      base(2,0) = (*it).x;
+      base(2,1) = (*it).y;
+    }
+    base(2,2) = 1;
+    //TODO Get obj from list of objects with selectedObjValue;
+    //transform();
+    // update();
+}
+
+extern "C" G_MODULE_EXPORT void btn_scale_clk(GtkWidget *widget, GtkWidget *entry) {
+    GtkEntry *scaleVect = GTK_ENTRY(gtk_builder_get_object(builder, "scaleFactor"));
+    std::list<coord> c = split(gtk_entry_get_text(scaleVect));
+
+    //TODO Create matrix method for creation of base.
+    matrix<double> base(3,3);
+    base(0,1) = 0;
+    base(0,2) = 0;
+    base(1,0) = 0;
+    base(1,2) = 0;
+    base(2,0) = 0;
+    base(2,1) = 0;
+    auto it = std::begin(c), end = --std::end(c);
+    while (it != end) {
+      base(0,0) = (*it).x;
+      base(1,1) = (*it).y;
+    }
+    base(2,2) = 1;
+    //TODO Get center of object, execute translation for center and back.
+    //TODO Get obj from list of objects with selectedObjValue;
+    //transform();
+    // update();
+}
+
+extern "C" G_MODULE_EXPORT void btn_rotate_clk(GtkWidget *widget, GtkWidget *entry) {
+    GtkEntry *rotateVect = GTK_ENTRY(gtk_builder_get_object(builder, "rotationDegree"));
+    const char* degree = gtk_entry_get_text(rotateVect);
+
+    //TODO Create matrix method for creation of base.
+    //TODO Get center of object and world. Rotate based on that point.
+    //TODO Rotate based on any point.
+    //TODO Get obj from list of objects with selectedObjValue;
+    //transform();
+    // update();
 }
 
 extern "C" G_MODULE_EXPORT void btn_draw_figure_clk() {
