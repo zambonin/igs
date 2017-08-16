@@ -40,12 +40,12 @@ matrix<T>& matrix<T>::operator+ (const matrix& m1) {
 
 template<typename T>
 matrix<T>& matrix<T>::operator* (const matrix& m1) {
-    matrix<T> *mcopy = new matrix<T>(m1.row, this->columns);
+    matrix<T> *mcopy = new matrix<T>(row, m1.columns);
     if(columns == m1.row) {
-        for(int i = 0; i < m1.row; ++i) {
-            for(int k = 0; k < columns; ++k) {
+        for(int i = 0; i < row; ++i) {
+            for(int k = 0; k < m1.columns; ++k) {
                 for(int inner = 0; inner < columns; ++inner) {
-                   mcopy->matrixGet(i,k) += this->elem[i*row+inner] * m1.elem[inner*row+k];
+                   mcopy->matrixGet(i,k) += this->elem[i*columns+inner] * m1.elem[inner*columns+k];
                 }
             }
         }

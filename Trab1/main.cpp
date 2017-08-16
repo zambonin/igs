@@ -2,6 +2,7 @@
 
 #include <map>
 #include <sstream>
+#include <math.h>
 
 static cairo_surface_t *surface = nullptr;
 
@@ -90,17 +91,19 @@ void update() {
 }
 
 extern "C" G_MODULE_EXPORT void change_selection() {
-    path = gtk_tree_path_new_from_string ("0");
-    gtk_tree_model_get_iter(GTK_TREE_MODEL (glist), &iter, path);
-    const char* value;
+    gtk_combo_box_get_active_iter (GTK_COMBO_BOX(combo), &iter);
+    // path = gtk_tree_path_new_from_string ("");
+    // gtk_tree_model_get_iter(GTK_TREE_MODEL (glist), &iter, path);
+    char* value;
     gtk_tree_model_get(GTK_TREE_MODEL(glist), &iter, 0, &value, -1);
     selectedObj = value;
+    update();
     // std::cout << value << std::endl;
 
 }
 
 extern "C" G_MODULE_EXPORT void btn_trans_clk(GtkWidget *widget, GtkWidget *entry) {
-    GtkEntry *tranferVect = GTK_ENTRY(gtk_builder_get_object(builder, "transferVector"));
+    GtkEntry *transferVect = GTK_ENTRY(gtk_builder_get_object(builder, "transferVector"));
     std::list<coord> c = split(gtk_entry_get_text(transferVect));
 
     //TODO Create matrix method for creation of base.
@@ -111,44 +114,112 @@ extern "C" G_MODULE_EXPORT void btn_trans_clk(GtkWidget *widget, GtkWidget *entr
     base(1,0) = 0;
     base(1,1) = 1;
     base(1,2) = 0;
-    auto it = std::begin(c), end = --std::end(c);
-    while (it != end) {
-      base(2,0) = (*it).x;
-      base(2,1) = (*it).y;
-    }
+
+    auto it = std::begin(c);
+    base(2,0) = (*it).x;
+    base(2,1) = (*it).y;
     base(2,2) = 1;
-    //TODO Get obj from list of objects with selectedObjValue;
-    //transform();
-    // update();
+
+    std::cout << "Name: " << selectedObj << objects.find(selectedObj)->first << std::endl;
+    drawable *obj = &(objects.find(selectedObj)->second);
+
+    obj->transform(base);
+    update();
 }
 
 extern "C" G_MODULE_EXPORT void btn_scale_clk(GtkWidget *widget, GtkWidget *entry) {
     GtkEntry *scaleVect = GTK_ENTRY(gtk_builder_get_object(builder, "scaleFactor"));
     std::list<coord> c = split(gtk_entry_get_text(scaleVect));
 
+
     //TODO Create matrix method for creation of base.
-    matrix<double> base(3,3);
-    base(0,1) = 0;
-    base(0,2) = 0;
-    base(1,0) = 0;
-    base(1,2) = 0;
-    base(2,0) = 0;
-    base(2,1) = 0;
-    auto it = std::begin(c), end = --std::end(c);
-    while (it != end) {
-      base(0,0) = (*it).x;
-      base(1,1) = (*it).y;
-    }
-    base(2,2) = 1;
+    matrix<double> baseScale(3,3);
+    baseScale(0,1) = 0;
+    baseScale(0,2) = 0;
+    baseScale(1,0) = 0;
+    baseScale(1,2) = 0;
+    baseScale(2,0) = 0;
+    baseScale(2,1) = 0;
+    auto it = c.begin();
+    baseScale(0,0) = (*it).x;
+    std::cout << (*it).x << " ";
+    baseScale(1,1) = (*it).y;
+    std::cout << (*it).y << std::endl;
+    baseScale(2,2) = 1;
     //TODO Get center of object, execute translation for center and back.
+    drawable *obj = &(objects.find(selectedObj)->second);
+    matrix<double> baseTrans(3,3);
+    baseTrans(0,0) = 1;
+    baseTrans(0,1) = 0;
+    baseTrans(0,2) = 0;
+    baseTrans(1,0) = 0;
+    baseTrans(1,1) = 1;
+    baseTrans(1,2) = 0;
+    baseTrans(2,0) = obj->centerX;
+    baseTrans(2,1) = obj->centerY;
+    baseTrans(2,2) = 1;
+
+    matrix<double> baseTransOrig(3,3);
+    baseTransOrig(0,0) = 1;
+    baseTransOrig(0,1) = 0;
+    baseTransOrig(0,2) = 0;
+    baseTransOrig(1,0) = 0;
+    baseTransOrig(1,1) = 1;
+    baseTransOrig(1,2) = 0;
+    baseTransOrig(2,0) = -1*obj->centerX;
+    baseTransOrig(2,1) = -1*obj->centerY;
+    baseTransOrig(2,2) = 1;
     //TODO Get obj from list of objects with selectedObjValue;
-    //transform();
-    // update();
+    baseScale.display();
+    baseTrans.display();
+    baseTransOrig.display();
+    obj->transform(baseTransOrig*baseScale*baseTrans);
+    update();
 }
 
 extern "C" G_MODULE_EXPORT void btn_rotate_clk(GtkWidget *widget, GtkWidget *entry) {
     GtkEntry *rotateVect = GTK_ENTRY(gtk_builder_get_object(builder, "rotationDegree"));
-    const char* degree = gtk_entry_get_text(rotateVect);
+    const double degree = std::atof(gtk_entry_get_text(rotateVect));
+    std::cout << degree << std::endl;
+    matrix<double> baseRot(3,3);
+    baseRot(0,0) = cos(degree);
+    baseRot(0,1) = -sin(degree);
+    baseRot(0,2) = 0;
+    baseRot(1,0) = sin(degree);
+    baseRot(1,1) = cos(degree);
+    baseRot(1,2) = 0;
+    baseRot(2,0) = 0;
+    baseRot(2,1) = 0;
+    baseRot(2,2) = 1;
+
+    drawable *obj = &(objects.find(selectedObj)->second);
+
+    matrix<double> baseTrans(3,3);
+    baseTrans(0,0) = 1;
+    baseTrans(0,1) = 0;
+    baseTrans(0,2) = 0;
+    baseTrans(1,0) = 0;
+    baseTrans(1,1) = 1;
+    baseTrans(1,2) = 0;
+    baseTrans(2,0) = obj->centerX;
+    baseTrans(2,1) = obj->centerY;
+    baseTrans(2,2) = 1;
+
+    matrix<double> baseTransOrig(3,3);
+    baseTransOrig(0,0) = 1;
+    baseTransOrig(0,1) = 0;
+    baseTransOrig(0,2) = 0;
+    baseTransOrig(1,0) = 0;
+    baseTransOrig(1,1) = 1;
+    baseTransOrig(1,2) = 0;
+    baseTransOrig(2,0) = -1*obj->centerX;
+    baseTransOrig(2,1) = -1*obj->centerY;
+    baseTransOrig(2,2) = 1;
+    // baseRot.display();
+    // baseTrans.display();
+    // baseTransOrig.display();
+    obj->transform(baseTransOrig*baseRot*baseTrans);
+    update();
 
     //TODO Create matrix method for creation of base.
     //TODO Get center of object and world. Rotate based on that point.
@@ -246,6 +317,7 @@ extern "C" G_MODULE_EXPORT void btn_clear_clk() {
     objects.clear();
     w.reset();
     gtk_widget_queue_draw(window_widget);
+    // gtk_list_store_clear(glist);
 }
 
 extern "C" G_MODULE_EXPORT void btn_center_clk() {

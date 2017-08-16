@@ -58,7 +58,15 @@ class coord {
 class drawable {
  public:
   explicit drawable(std::string _name, const std::list<coord>& _orig)
-    : name(std::move(_name)), orig(_orig), actual(_orig) {}
+    : name(std::move(_name)), orig(_orig), actual(_orig) {
+        auto it = orig.begin();
+        for(; it!=orig.end(); ++it) {
+            centerX += (*it).x;
+            centerY += (*it).y;
+        }
+        centerX = centerX/orig.size();
+        centerY = centerY/orig.size();
+    }
 
   void draw(cairo_t* cr) {
     auto it = std::begin(actual), end = --std::end(actual);
@@ -95,15 +103,31 @@ class drawable {
 
   void transform(matrix<double> m) {
       matrix<double> c(1,3);
-      c(0,0) = x;
-      c(0,1) = y;
-      c(0,2) = z;
-      matrix<double> res = c*m;
-      x = res(0,0);
-      y = res(0,1);
-      z = res(0,2);
+      auto it1 = orig.begin();
+      m.display();
+      matrix<double> res(1,3);
+      c(0,0) = (*it1).x;
+      c(0,1) = (*it1).y;
+      c(0,2) = (*it1).z;
+      res = c*m;
+      (*it1).x = res(0,0);
+      (*it1).y = res(0,1);
+      (*it1).z = res(0,2);
+      res.display();
+      it1++;
+      for (; it1 != orig.end(); ++it1) {
+          std::cout << "Hello" << std::endl;
+          c(0,0) = (*it1).x;
+          c(0,1) = (*it1).y;
+          c(0,2) = (*it1).z;
+          res = c*m;
+          (*it1).x = res(0,0);
+          (*it1).y = res(0,1);
+          (*it1).z = res(0,2);
+          res.display();
+      }
   }
-
+  double centerX, centerY;
   const std::string name;
   std::list<coord> orig, actual;
 };
