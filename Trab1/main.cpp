@@ -313,11 +313,12 @@ extern "C" G_MODULE_EXPORT void btn_exit_clk() {
 }
 
 extern "C" G_MODULE_EXPORT void btn_clear_clk() {
+    selectedObj = 0;
     clear_surface();
     objects.clear();
     w.reset();
-    gtk_widget_queue_draw(window_widget);
     // gtk_list_store_clear(glist);
+    gtk_widget_queue_draw(window_widget);
 }
 
 extern "C" G_MODULE_EXPORT void btn_center_clk() {
