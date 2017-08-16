@@ -3,7 +3,7 @@
 #include <map>
 #include <sstream>
 #include <math.h>
-
+#define PI 3.14159265
 static cairo_surface_t *surface = nullptr;
 
 GtkWidget *drawing_area, *window_widget, *combo;
@@ -179,7 +179,7 @@ extern "C" G_MODULE_EXPORT void btn_scale_clk(GtkWidget *widget, GtkWidget *entr
 
 extern "C" G_MODULE_EXPORT void btn_rotate_clk(GtkWidget *widget, GtkWidget *entry) {
     GtkEntry *rotateVect = GTK_ENTRY(gtk_builder_get_object(builder, "rotationDegree"));
-    const double degree = std::atof(gtk_entry_get_text(rotateVect));
+    const double degree = (PI*(std::atof(gtk_entry_get_text(rotateVect))))/180;
     std::cout << degree << std::endl;
     matrix<double> baseRot(3,3);
     baseRot(0,0) = cos(degree);
