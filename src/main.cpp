@@ -1,5 +1,6 @@
 #include "structures.hpp"
 
+#include <cmath>
 #include <map>
 #include <sstream>
 
@@ -9,6 +10,18 @@ GtkWidget *drawing_area, *window_widget;
 
 std::map<std::string, drawable> objects;
 window w;
+
+matrix m_transfer(const coord &c) {
+  return matrix({{1, 0, 0}, {0, 1, 0}, {c.x, c.y, 1}});
+}
+
+matrix m_rotate(double a) {
+  return matrix({{cos(a), -sin(a), 0}, {sin(a), cos(a), 0}, {0, 0, 1}});
+}
+
+matrix m_scale(const coord &c) {
+  return matrix({{c.x, 0, 0}, {0, c.y, 0}, {0, 0, 1}});
+}
 
 std::list<coord> split(const char *input) {
   std::list<coord> c;
@@ -154,8 +167,38 @@ extern "C" G_MODULE_EXPORT void btn_center_clk() {
 }
 
 extern "C" G_MODULE_EXPORT void btn_rotate_clk() {}
-extern "C" G_MODULE_EXPORT void btn_scale_clk() {}
-extern "C" G_MODULE_EXPORT void btn_trans_clk() {}
+
+extern "C" G_MODULE_EXPORT void btn_trans_clk(GtkWidget *widget,
+                                              GtkWidget *entry) {
+  GtkComboBoxText *combo =
+      GTK_COMBO_BOX_TEXT(gtk_builder_get_object(builder, "comboBox"));
+  GtkEntry *data = GTK_ENTRY(gtk_builder_get_object(builder, "transferVector"));
+
+  std::list<coord> c = split(gtk_entry_get_text(data));
+  gchar *obj = gtk_combo_box_text_get_active_text(combo);
+
+  if (obj && c.size() == 1) {
+    objects.find(obj)->second.transform(m_transfer(c.front()));
+    update();
+  }
+}
+
+extern "C" G_MODULE_EXPORT void btn_scale_clk(GtkWidget *widget,
+                                              GtkWidget *entry) {
+  GtkComboBoxText *combo =
+      GTK_COMBO_BOX_TEXT(gtk_builder_get_object(builder, "comboBox"));
+  GtkEntry *data = GTK_ENTRY(gtk_builder_get_object(builder, "scaleFactor"));
+
+  std::list<coord> c = split(gtk_entry_get_text(data));
+  gchar *obj = gtk_combo_box_text_get_active_text(combo);
+
+  if (obj && c.size() == 1) {
+    drawable &d = objects.find(obj)->second;
+    d.transform(m_transfer(-d.center()) * m_scale(c.front()) *
+                m_transfer(d.center()));
+    update();
+  }
+}
 
 extern "C" G_MODULE_EXPORT void btn_delete_figure_clk() {
   GtkComboBoxText *combo =

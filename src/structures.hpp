@@ -4,6 +4,7 @@
 #include <gtk/gtk.h>
 #include <iostream>
 #include <list>
+#include <numeric>
 #include <string>
 #include <vector>
 
@@ -43,15 +44,23 @@ class coord {
 public:
   coord(double _x, double _y, double _z = 1) : x(_x), y(_y), z(_z) {}
 
-  double x, y, z;
-
   bool operator!=(const coord &rhs) {
     return this->x != rhs.x || this->y != rhs.y;
   }
 
+  coord operator+(const coord &c) { return coord(x + c.x, y + c.y, z + c.z); }
+
+  coord operator+=(const coord &c) { return (*this) + c; }
+
+  coord operator-() { return coord(-x, -y, -z); }
+
+  coord operator/(double s) { return coord(x / s, y / s, z / s); }
+
   friend std::ostream &operator<<(std::ostream &os, const coord &c) {
     return os << "x: " << c.x << " y: " << c.y << std::endl;
   }
+
+  double x, y, z;
 };
 
 class matrix {
@@ -144,6 +153,18 @@ public:
       (*it2).x = (((*it1).x - w.xmin) / (w.xmax - w.xmin)) * (wid - 0);
       (*it2).y = (1 - (((*it1).y - w.ymin) / (w.ymax - w.ymin))) * (hei - 0);
     }
+  }
+
+  void transform(matrix m) {
+    for (auto &i : orig) {
+      matrix res = matrix({{i.x, i.y, i.z}}) * m;
+      i = coord(res[0][0], res[0][1], res[0][2]);
+    }
+  }
+
+  coord center() {
+    coord sum = std::accumulate(orig.begin(), orig.end(), coord(0, 0));
+    return sum / orig.size();
   }
 
   const std::string name;
