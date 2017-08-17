@@ -65,17 +65,17 @@ public:
 
 class matrix {
 public:
-  matrix(int _l = 3, int _c = 3)
+  explicit matrix(int _l = 3, int _c = 3)
       : l(_l), c(_c), elem(_l, std::vector<double>(_c, 0)) {}
 
-  matrix(std::vector<std::vector<double>> e)
+  explicit matrix(std::vector<std::vector<double>> e)
       : l(e.size()), c(e[0].size()), elem(e) {}
 
   std::vector<double> &operator[](int i) { return elem[i]; }
 
   const std::vector<double> &operator[](int i) const { return elem[i]; }
 
-  matrix operator+(matrix &m) {
+  matrix operator+(const matrix &m) {
     if (l == m.l && c == m.c) {
       matrix r(3, 3);
       for (int i = 0; i < l; ++i) {
@@ -84,12 +84,11 @@ public:
         }
       }
       return r;
-    } else {
-      return *this;
     }
+    return *this;
   }
 
-  matrix operator*(matrix m) {
+  matrix operator*(const matrix &m) {
     matrix r(l, m.c);
     for (int i = 0; i < l; ++i) {
       for (int j = 0; j < m.c; ++j) {
@@ -155,7 +154,7 @@ public:
     }
   }
 
-  void transform(matrix m) {
+  void transform(const matrix &m) {
     for (auto &i : orig) {
       matrix res = matrix({{i.x, i.y, i.z}}) * m;
       i = coord(res[0][0], res[0][1], res[0][2]);
