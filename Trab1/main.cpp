@@ -160,9 +160,7 @@ extern "C" G_MODULE_EXPORT void btn_draw_figure_clk() {
     objects.insert(std::pair<std::string, drawable>(s, drawable(s, c)));
     update();
 
-    gtk_list_store_append(glist, &iter);
-    gtk_list_store_set(glist, &iter, 0, gtk_entry_get_text(name), -1);
-    gtk_combo_box_set_active_iter(GTK_COMBO_BOX(combo), &iter);
+    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), NULL, s.c_str());
   }
 
   gtk_entry_set_text(name, "");
@@ -233,9 +231,7 @@ extern "C" G_MODULE_EXPORT void btn_clear_clk() {
     clear_surface();
     objects.clear();
     w.reset();
-    gtk_list_store_clear(glist);
-    gtk_list_store_append(glist, &iter);
-    gtk_list_store_set(glist, &iter, 0, "", -1);
+    gtk_combo_box_text_remove_all(GTK_COMBO_BOX_TEXT(combo));
     gtk_widget_queue_draw(window_widget);
 }
 
@@ -256,16 +252,7 @@ int main(int argc, char *argv[]) {
     combo = GTK_WIDGET(gtk_builder_get_object(builder, "comboBox"));
 
     GType types = G_TYPE_STRING;
-
     gtk_list_store_set_column_types(glist, 1, &types);
-    gtk_combo_box_set_model(GTK_COMBO_BOX(combo), GTK_TREE_MODEL(glist));
-
-    gtk_list_store_append(glist, &iter);
-    gtk_list_store_set(glist, &iter, 0, "", -1);
-
-    GtkCellRenderer *cell = gtk_cell_renderer_text_new();
-    gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), cell, TRUE );
-    gtk_cell_layout_set_attributes( GTK_CELL_LAYOUT( combo ), cell, "text", 0, NULL );
 
     g_signal_connect(drawing_area, "draw",
             G_CALLBACK(draw_cb), nullptr);
