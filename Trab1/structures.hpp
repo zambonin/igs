@@ -84,6 +84,10 @@ class matrix {
     return elem[i];
   }
 
+  const std::vector<double>& operator[](int i) const {
+    return elem[i];
+  }
+
   matrix operator+(matrix& m) {
     if (l == m.l && c == m.c) {
       matrix r(3, 3);
@@ -103,7 +107,7 @@ class matrix {
     for (int i = 0; i < l; ++i) {
       for (int j = 0; j < m.c; ++j) {
         double mul = 0;
-        for (int k = 1; k < m.l; ++k) {
+        for (int k = 0; k < m.l; ++k) {
           mul += elem[i][k] * m[k][j];
         }
         r[i][j] = mul;
@@ -112,7 +116,7 @@ class matrix {
     return r;
   }
 
-  friend std::ostream& operator<<(std::ostream& os, matrix& m) {
+  friend std::ostream& operator<<(std::ostream& os, const matrix& m) {
     for (int i = 0; i < m.l; ++i) {
       for (int j = 0; j < m.c; ++j) {
         os << m[i][j] << " ";
@@ -165,14 +169,9 @@ class drawable {
   }
 
   void transform(matrix m) {
-    matrix res(1, 3), c(1, 3);
     for (auto& i : orig) {
-      std::vector<std::vector<double>> v = {{i.x, i.y, i.z}};
-      matrix c(v);
-      res = c * m;
-      i.x = res[0][0];
-      i.y = res[0][1];
-      i.z = res[0][2];
+      matrix res = matrix({{i.x, i.y, i.z}}) * m;
+      i = coord(res[0][0], res[0][1], res[0][2]);
     }
   }
 

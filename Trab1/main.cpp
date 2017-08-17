@@ -6,11 +6,7 @@
 static cairo_surface_t *surface = nullptr;
 
 GtkWidget *drawing_area, *window_widget, *combo;
-GtkListStore *glist;
 GtkBuilder *builder;
-GtkTreeIter iter;
-GtkTreePath *path;
-const char* selectedObj;
 
 matrix m_transfer(const coord& c) {
   return matrix({{1, 0, 0}, {0, 1, 0}, {c.x, c.y, 1}});
@@ -107,9 +103,10 @@ extern "C" G_MODULE_EXPORT void btn_trans_clk(
 
   GtkEntry *data = GTK_ENTRY(gtk_builder_get_object(builder, "transferVector"));
   std::list<coord> c = split(gtk_entry_get_text(data));
+  gchar *obj = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo));
 
-  if (selectedObj && c.size() == 1) {
-    objects.find(selectedObj)->second.transform(m_transfer(c.front()));
+  if (obj && c.size() == 1) {
+    objects.find(obj)->second.transform(m_transfer(c.front()));
     update();
   }
 
@@ -120,10 +117,10 @@ extern "C" G_MODULE_EXPORT void btn_scale_clk(
 
   GtkEntry *data = GTK_ENTRY(gtk_builder_get_object(builder, "scaleFactor"));
   std::list<coord> c = split(gtk_entry_get_text(data));
+  gchar *obj = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo));
 
-  if (selectedObj && c.size() == 1) {
-    printf(selectedObj);
-    drawable d = objects.find(selectedObj)->second;
+  if (obj && c.size() == 1) {
+    drawable d = objects.find(obj)->second;
     d.transform(
         m_transfer(d.center()) * m_scale(c.front()) * m_transfer(-d.center()));
     update();
@@ -136,11 +133,12 @@ extern "C" G_MODULE_EXPORT void btn_rotate_clk(
     GtkWidget *widget, GtkWidget *entry) {
 
   GtkEntry *data = GTK_ENTRY(gtk_builder_get_object(builder, "rotationDegree"));
+  gchar *obj = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo));
 
-  if (selectedObj) {
+  if (obj) {
     try {
       double a = M_PI * std::stod(gtk_entry_get_text(data)) / 180;
-      drawable d = objects.find(selectedObj)->second;
+      drawable d = objects.find(obj)->second;
       d.transform(m_transfer(d.center()) * m_rotate(a) * m_transfer(-d.center()));
       update();
     } catch (const std::invalid_argument& ia) {}
@@ -166,7 +164,6 @@ extern "C" G_MODULE_EXPORT void btn_draw_figure_clk() {
     update();
 
     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), NULL, s.c_str());
-    selectedObj = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo));
   }
 
   gtk_entry_set_text(name, "");
@@ -233,7 +230,6 @@ extern "C" G_MODULE_EXPORT void btn_exit_clk() {
 }
 
 extern "C" G_MODULE_EXPORT void btn_clear_clk() {
-    selectedObj = 0;
     clear_surface();
     objects.clear();
     w.reset();
@@ -256,9 +252,6 @@ int main(int argc, char *argv[]) {
 
     glist = GTK_LIST_STORE(gtk_builder_get_object(builder, "liststore1"));
     combo = GTK_WIDGET(gtk_builder_get_object(builder, "comboBox"));
-
-    GType types = G_TYPE_STRING;
-    gtk_list_store_set_column_types(glist, 1, &types);
 
     g_signal_connect(drawing_area, "draw",
             G_CALLBACK(draw_cb), nullptr);
