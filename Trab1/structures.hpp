@@ -5,7 +5,8 @@
 #include <iostream>
 #include <list>
 #include <string>
-#include "matrix.h"
+#include <vector>
+
 class window {
  public:
   explicit window(double _xmax = 100, double _xmin = 0,
@@ -22,7 +23,7 @@ class window {
     this->ymin += l4;
   }
 
- void zoom(double r) {
+  void zoom(double r) {
     this->xmax *= r;
     this->xmin *= r;
     this->ymax *= r;
@@ -44,8 +45,6 @@ class coord {
   coord(double _x, double _y, double _z = 1)
     : x(_x), y(_y), z(_z) {}
 
-  double x, y, z;
-
   bool operator!=(const coord& rhs) {
     return this->x != rhs.x || this->y != rhs.y;
   }
@@ -53,6 +52,62 @@ class coord {
   friend std::ostream& operator<<(std::ostream& os, const coord& c) {
     return os << "x: " << c.x << " y: " << c.y << std::endl;
   }
+
+  double x, y, z;
+};
+
+class matrix {
+ public:
+  matrix(int _l = 3, int _c = 3)
+    : l(_l), c(_c), elem(_l, std::vector<double>(_c, 0)) {}
+
+  matrix(std::vector<std::vector<double>> e)
+    : l(e.size()), c(e[0].size()), elem(e) {}
+
+  std::vector<double>& operator[](int i) {
+    return elem[i];
+  }
+
+  matrix operator+(matrix& m) {
+    if (l == m.l && c == m.c) {
+      matrix r(3, 3);
+      for (int i = 0; i < l; ++i) {
+        for (int j = 0; i < c; ++i) {
+          r[i][j] += elem[i][j] + m[i][j];
+        }
+      }
+      return r;
+    } else {
+      return *this;
+    }
+  }
+
+  matrix operator*(matrix& m) {
+    matrix r(l, m.c);
+    for (int i = 0; i < l; ++i) {
+      for (int j = 0; j < m.c; ++j) {
+        double mul = 0;
+        for (int k = 1; k < m.l; ++k) {
+          mul += elem[i][k] * m[k][j];
+        }
+        r[i][j] = mul;
+      }
+    }
+    return r;
+  }
+
+  friend std::ostream& operator<<(std::ostream& os, matrix& m) {
+    for (int i = 0; i < m.l; ++i) {
+      for (int j = 0; j < m.c; ++j) {
+        os << m[i][j] << " ";
+      }
+      os << std::endl;
+    }
+    return os;
+  }
+
+  int l, c;
+  std::vector<std::vector<double>> elem;
 };
 
 class drawable {
@@ -101,32 +156,18 @@ class drawable {
     }
   }
 
-  void transform(matrix<double> m) {
-      matrix<double> c(1,3);
-      auto it1 = orig.begin();
-      m.display();
-      matrix<double> res(1,3);
-      c(0,0) = (*it1).x;
-      c(0,1) = (*it1).y;
-      c(0,2) = (*it1).z;
-      res = c*m;
-      (*it1).x = res(0,0);
-      (*it1).y = res(0,1);
-      (*it1).z = res(0,2);
-      res.display();
-      it1++;
-      for (; it1 != orig.end(); ++it1) {
-          std::cout << "Hello" << std::endl;
-          c(0,0) = (*it1).x;
-          c(0,1) = (*it1).y;
-          c(0,2) = (*it1).z;
-          res = c*m;
-          (*it1).x = res(0,0);
-          (*it1).y = res(0,1);
-          (*it1).z = res(0,2);
-          res.display();
-      }
+  void transform(matrix m) {
+    matrix res(1, 3), c(1, 3);
+    for (auto& i : orig) {
+      std::vector<std::vector<double>> v = {{i.x, i.y, i.z}};
+      matrix c(v);
+      res = c * m;
+      i.x = res[0][0];
+      i.y = res[0][1];
+      i.z = res[0][2];
+    }
   }
+
   double centerX, centerY;
   const std::string name;
   std::list<coord> orig, actual;

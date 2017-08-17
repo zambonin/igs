@@ -1,9 +1,8 @@
 #include "structures.hpp"
-
+#include <cmath>
 #include <map>
 #include <sstream>
-#include <math.h>
-#define PI 3.14159265
+
 static cairo_surface_t *surface = nullptr;
 
 GtkWidget *drawing_area, *window_widget, *combo;
@@ -92,165 +91,82 @@ void update() {
 
 extern "C" G_MODULE_EXPORT void change_selection() {
     gtk_combo_box_get_active_iter (GTK_COMBO_BOX(combo), &iter);
-    // path = gtk_tree_path_new_from_string ("");
-    // gtk_tree_model_get_iter(GTK_TREE_MODEL (glist), &iter, path);
     char* value;
     gtk_tree_model_get(GTK_TREE_MODEL(glist), &iter, 0, &value, -1);
     selectedObj = value;
+}
+
+extern "C" G_MODULE_EXPORT void btn_trans_clk(
+    GtkWidget *widget, GtkWidget *entry) {
+
+  GtkEntry *data = GTK_ENTRY(gtk_builder_get_object(builder, "transferVector"));
+  std::list<coord> c = split(gtk_entry_get_text(data));
+
+  if (c.size() == 1) {
+    matrix base({{1, 0, 0}, {0, 0, 1}, {c.front().x, c.front().y, 1}});
+    objects.find(selectedObj)->second.transform(base);
     update();
-    // std::cout << value << std::endl;
+  }
 
 }
 
-extern "C" G_MODULE_EXPORT void btn_trans_clk(GtkWidget *widget, GtkWidget *entry) {
-    GtkEntry *transferVect = GTK_ENTRY(gtk_builder_get_object(builder, "transferVector"));
-    std::list<coord> c = split(gtk_entry_get_text(transferVect));
+extern "C" G_MODULE_EXPORT void btn_scale_clk(
+    GtkWidget *widget, GtkWidget *entry) {
 
-    //TODO Create matrix method for creation of base.
-    matrix<double> base(3,3);
-    base(0,0) = 1;
-    base(0,1) = 0;
-    base(0,2) = 0;
-    base(1,0) = 0;
-    base(1,1) = 1;
-    base(1,2) = 0;
+  GtkEntry *data = GTK_ENTRY(gtk_builder_get_object(builder, "scaleFactor"));
+  std::list<coord> c = split(gtk_entry_get_text(data));
 
-    auto it = std::begin(c);
-    base(2,0) = (*it).x;
-    base(2,1) = (*it).y;
-    base(2,2) = 1;
-
-    std::cout << "Name: " << selectedObj << objects.find(selectedObj)->first << std::endl;
-    drawable *obj = &(objects.find(selectedObj)->second);
-
-    obj->transform(base);
+  if (c.size() == 1) {
+    drawable d = objects.find(selectedObj)->second;
+    matrix orig({{1, 0, 0}, {0, 1, 0}, {-d.centerX, -d.centerY, 1}});
+    matrix scale({{c.front().x, 0, 0}, {0, c.front().y, 0}, {0, 0, 1}});
+    matrix trans({{1, 0, 0}, {0, 1, 0}, {d.centerX, d.centerY, 1}});
+    d.transform(orig * scale * trans);
     update();
+  }
+
 }
 
-extern "C" G_MODULE_EXPORT void btn_scale_clk(GtkWidget *widget, GtkWidget *entry) {
-    GtkEntry *scaleVect = GTK_ENTRY(gtk_builder_get_object(builder, "scaleFactor"));
-    std::list<coord> c = split(gtk_entry_get_text(scaleVect));
+extern "C" G_MODULE_EXPORT void btn_rotate_clk(
+    GtkWidget *widget, GtkWidget *entry) {
 
+  GtkEntry *data = GTK_ENTRY(gtk_builder_get_object(builder, "rotationDegree"));
 
-    //TODO Create matrix method for creation of base.
-    matrix<double> baseScale(3,3);
-    baseScale(0,1) = 0;
-    baseScale(0,2) = 0;
-    baseScale(1,0) = 0;
-    baseScale(1,2) = 0;
-    baseScale(2,0) = 0;
-    baseScale(2,1) = 0;
-    auto it = c.begin();
-    baseScale(0,0) = (*it).x;
-    std::cout << (*it).x << " ";
-    baseScale(1,1) = (*it).y;
-    std::cout << (*it).y << std::endl;
-    baseScale(2,2) = 1;
-    //TODO Get center of object, execute translation for center and back.
-    drawable *obj = &(objects.find(selectedObj)->second);
-    matrix<double> baseTrans(3,3);
-    baseTrans(0,0) = 1;
-    baseTrans(0,1) = 0;
-    baseTrans(0,2) = 0;
-    baseTrans(1,0) = 0;
-    baseTrans(1,1) = 1;
-    baseTrans(1,2) = 0;
-    baseTrans(2,0) = obj->centerX;
-    baseTrans(2,1) = obj->centerY;
-    baseTrans(2,2) = 1;
-
-    matrix<double> baseTransOrig(3,3);
-    baseTransOrig(0,0) = 1;
-    baseTransOrig(0,1) = 0;
-    baseTransOrig(0,2) = 0;
-    baseTransOrig(1,0) = 0;
-    baseTransOrig(1,1) = 1;
-    baseTransOrig(1,2) = 0;
-    baseTransOrig(2,0) = -1*obj->centerX;
-    baseTransOrig(2,1) = -1*obj->centerY;
-    baseTransOrig(2,2) = 1;
-    //TODO Get obj from list of objects with selectedObjValue;
-    baseScale.display();
-    baseTrans.display();
-    baseTransOrig.display();
-    obj->transform(baseTransOrig*baseScale*baseTrans);
+  try {
+    double a = M_PI * std::stod(gtk_entry_get_text(data)) / 180;
+    drawable d = objects.find(selectedObj)->second;
+    matrix base({{cos(a), -sin(a), 0}, {sin(a), cos(a), 0}, {0, 0, 1}});
+    matrix trans({{1, 0, 0}, {0, 1, 0}, {d.centerX, d.centerY, 1}});
+    matrix orig({{1, 0, 0}, {0, 1, 0}, {-d.centerX, -d.centerY, 1}});
+    d.transform(base * trans * orig);
     update();
-}
+  } catch (const std::invalid_argument& ia) {}
 
-extern "C" G_MODULE_EXPORT void btn_rotate_clk(GtkWidget *widget, GtkWidget *entry) {
-    GtkEntry *rotateVect = GTK_ENTRY(gtk_builder_get_object(builder, "rotationDegree"));
-    const double degree = (PI*(std::atof(gtk_entry_get_text(rotateVect))))/180;
-    std::cout << degree << std::endl;
-    matrix<double> baseRot(3,3);
-    baseRot(0,0) = cos(degree);
-    baseRot(0,1) = -sin(degree);
-    baseRot(0,2) = 0;
-    baseRot(1,0) = sin(degree);
-    baseRot(1,1) = cos(degree);
-    baseRot(1,2) = 0;
-    baseRot(2,0) = 0;
-    baseRot(2,1) = 0;
-    baseRot(2,2) = 1;
+    // TODO Get center of object and world. Rotate based on that point.
+    // TODO Rotate based on any point.
 
-    drawable *obj = &(objects.find(selectedObj)->second);
-
-    matrix<double> baseTrans(3,3);
-    baseTrans(0,0) = 1;
-    baseTrans(0,1) = 0;
-    baseTrans(0,2) = 0;
-    baseTrans(1,0) = 0;
-    baseTrans(1,1) = 1;
-    baseTrans(1,2) = 0;
-    baseTrans(2,0) = obj->centerX;
-    baseTrans(2,1) = obj->centerY;
-    baseTrans(2,2) = 1;
-
-    matrix<double> baseTransOrig(3,3);
-    baseTransOrig(0,0) = 1;
-    baseTransOrig(0,1) = 0;
-    baseTransOrig(0,2) = 0;
-    baseTransOrig(1,0) = 0;
-    baseTransOrig(1,1) = 1;
-    baseTransOrig(1,2) = 0;
-    baseTransOrig(2,0) = -1*obj->centerX;
-    baseTransOrig(2,1) = -1*obj->centerY;
-    baseTransOrig(2,2) = 1;
-    // baseRot.display();
-    // baseTrans.display();
-    // baseTransOrig.display();
-    obj->transform(baseTransOrig*baseRot*baseTrans);
-    update();
-
-    //TODO Create matrix method for creation of base.
-    //TODO Get center of object and world. Rotate based on that point.
-    //TODO Rotate based on any point.
-    //TODO Get obj from list of objects with selectedObjValue;
-    //transform();
-    // update();
 }
 
 extern "C" G_MODULE_EXPORT void btn_draw_figure_clk() {
 
-    GtkEntry *name = GTK_ENTRY(gtk_builder_get_object(builder, "name")),
-             *coor = GTK_ENTRY(gtk_builder_get_object(builder, "coord"));
+  GtkEntry *name = GTK_ENTRY(gtk_builder_get_object(builder, "name")),
+           *coor = GTK_ENTRY(gtk_builder_get_object(builder, "coord"));
 
-    std::string name_entry = std::string(gtk_entry_get_text(name));
+  std::string name_entry = std::string(gtk_entry_get_text(name));
+  std::list<coord> c = split(gtk_entry_get_text(coor));
+
+  if (!name_entry.empty() && !c.empty()) {
+    std::string s(name_entry);
+    objects.insert(std::pair<std::string, drawable>(s, drawable(s, c)));
+    update();
 
     gtk_list_store_append(glist, &iter);
     gtk_list_store_set(glist, &iter, 0, gtk_entry_get_text(name), -1);
+    gtk_combo_box_set_active_iter(GTK_COMBO_BOX(combo), &iter);
+  }
 
-    const char *coord_entry = gtk_entry_get_text(coor);
-    std::list<coord> c = split(coord_entry);
-
-    if (!name_entry.empty() && !c.empty()) {
-        std::string s(name_entry);
-        objects.insert(std::pair<std::string, drawable>(s, drawable(s, c)));
-        update();
-    }
-
-    gtk_entry_set_text(name, "");
-    gtk_entry_set_text(coor, "");
-
+  gtk_entry_set_text(name, "");
+  gtk_entry_set_text(coor, "");
 
 }
 
@@ -317,7 +233,9 @@ extern "C" G_MODULE_EXPORT void btn_clear_clk() {
     clear_surface();
     objects.clear();
     w.reset();
-    // gtk_list_store_clear(glist);
+    gtk_list_store_clear(glist);
+    gtk_list_store_append(glist, &iter);
+    gtk_list_store_set(glist, &iter, 0, "", -1);
     gtk_widget_queue_draw(window_widget);
 }
 
@@ -340,19 +258,10 @@ int main(int argc, char *argv[]) {
     GType types = G_TYPE_STRING;
 
     gtk_list_store_set_column_types(glist, 1, &types);
+    gtk_combo_box_set_model(GTK_COMBO_BOX(combo), GTK_TREE_MODEL(glist));
 
-    // gtk_list_store_append(glist, &iter);
-    // gtk_list_store_set(glist, &iter, 0, "foo", -1);
-
-    // gtk_list_store_append(glist, &iter);
-    // gtk_list_store_set(glist, &iter, 0, "test", -1);
-
-
-    // gtk_list_store_append(glist, &iter);
-    // gtk_list_store_set(glist, &iter, 0, "test1", -1);
-
-
-    gtk_combo_box_set_model (GTK_COMBO_BOX (combo), GTK_TREE_MODEL(glist));
+    gtk_list_store_append(glist, &iter);
+    gtk_list_store_set(glist, &iter, 0, "", -1);
 
     GtkCellRenderer *cell = gtk_cell_renderer_text_new();
     gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), cell, TRUE );
