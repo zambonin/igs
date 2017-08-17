@@ -4,6 +4,7 @@
 #include <gtk/gtk.h>
 #include <iostream>
 #include <list>
+#include <numeric>
 #include <string>
 #include <vector>
 
@@ -176,11 +177,8 @@ class drawable {
   }
 
   coord center() {
-    coord c(0, 0);
-    for (auto& i : orig) {
-      c += i;
-    }
-    return c / orig.size();
+    coord sum = std::accumulate(orig.begin(), orig.end(), coord(0, 0));
+    return sum / orig.size();
   }
 
   const std::string name;

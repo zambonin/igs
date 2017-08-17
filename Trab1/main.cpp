@@ -120,9 +120,9 @@ extern "C" G_MODULE_EXPORT void btn_scale_clk(
   gchar *obj = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo));
 
   if (obj && c.size() == 1) {
-    drawable d = objects.find(obj)->second;
+    drawable& d = objects.find(obj)->second;
     d.transform(
-        m_transfer(d.center()) * m_scale(c.front()) * m_transfer(-d.center()));
+        m_transfer(-d.center()) * m_scale(c.front()) * m_transfer(d.center()));
     update();
   }
 
@@ -138,8 +138,9 @@ extern "C" G_MODULE_EXPORT void btn_rotate_clk(
   if (obj) {
     try {
       double a = M_PI * std::stod(gtk_entry_get_text(data)) / 180;
-      drawable d = objects.find(obj)->second;
-      d.transform(m_transfer(d.center()) * m_rotate(a) * m_transfer(-d.center()));
+      drawable& d = objects.find(obj)->second;
+      d.transform(
+          m_transfer(-d.center()) * m_rotate(a) * m_transfer(d.center()));
       update();
     } catch (const std::invalid_argument& ia) {}
 
@@ -250,7 +251,6 @@ int main(int argc, char *argv[]) {
     window_widget = GTK_WIDGET(gtk_builder_get_object(builder, "main_window"));
     drawing_area = GTK_WIDGET(gtk_builder_get_object(builder, "drawing_area"));
 
-    glist = GTK_LIST_STORE(gtk_builder_get_object(builder, "liststore1"));
     combo = GTK_WIDGET(gtk_builder_get_object(builder, "comboBox"));
 
     g_signal_connect(drawing_area, "draw",
