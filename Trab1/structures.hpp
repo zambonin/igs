@@ -49,6 +49,22 @@ class coord {
     return this->x != rhs.x || this->y != rhs.y;
   }
 
+  coord operator+(const coord& c) {
+    return coord(x + c.x, y + c.y, z + c.z);
+  }
+
+  coord operator+=(const coord& c) {
+    return (*this) + c;
+  }
+
+  coord operator-() {
+    return coord(-x, -y, -z);
+  }
+
+  coord operator/(double s) {
+    return coord(x / s, y / s, z / s);
+  }
+
   friend std::ostream& operator<<(std::ostream& os, const coord& c) {
     return os << "x: " << c.x << " y: " << c.y << std::endl;
   }
@@ -82,7 +98,7 @@ class matrix {
     }
   }
 
-  matrix operator*(matrix& m) {
+  matrix operator*(matrix m) {
     matrix r(l, m.c);
     for (int i = 0; i < l; ++i) {
       for (int j = 0; j < m.c; ++j) {
@@ -113,15 +129,7 @@ class matrix {
 class drawable {
  public:
   explicit drawable(std::string _name, const std::list<coord>& _orig)
-    : name(std::move(_name)), orig(_orig), actual(_orig) {
-        auto it = orig.begin();
-        for(; it!=orig.end(); ++it) {
-            centerX += (*it).x;
-            centerY += (*it).y;
-        }
-        centerX = centerX/orig.size();
-        centerY = centerY/orig.size();
-    }
+    : name(std::move(_name)), orig(_orig), actual(_orig) {}
 
   void draw(cairo_t* cr) {
     auto it = std::begin(actual), end = --std::end(actual);
@@ -168,7 +176,14 @@ class drawable {
     }
   }
 
-  double centerX, centerY;
+  coord center() {
+    coord c(0, 0);
+    for (auto& i : orig) {
+      c += i;
+    }
+    return c / orig.size();
+  }
+
   const std::string name;
   std::list<coord> orig, actual;
 };
