@@ -166,7 +166,26 @@ extern "C" G_MODULE_EXPORT void btn_center_clk() {
   update();
 }
 
-extern "C" G_MODULE_EXPORT void btn_rotate_clk() {}
+extern "C" G_MODULE_EXPORT void btn_rotate_clk(GtkWidget *widget,
+                                               GtkWidget *entry) {
+  GtkComboBoxText *combo =
+      GTK_COMBO_BOX_TEXT(gtk_builder_get_object(builder, "comboBox"));
+  GtkEntry *data = GTK_ENTRY(gtk_builder_get_object(builder, "rotationDegree"));
+  gchar *obj = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo));
+
+  if (obj != nullptr) {
+    try {
+      double a = M_PI * std::stod(gtk_entry_get_text(data)) / 180;
+      drawable &d = objects.find(obj)->second;
+      d.transform(m_transfer(-d.center()) * m_rotate(a) *
+                  m_transfer(d.center()));
+      update();
+    } catch (const std::invalid_argument &ia) {
+    }
+    // TODO: Rotate based on any point.
+    // TODO: utils.hpp (split and matrix functions)
+  }
+}
 
 extern "C" G_MODULE_EXPORT void btn_trans_clk(GtkWidget *widget,
                                               GtkWidget *entry) {
@@ -177,7 +196,7 @@ extern "C" G_MODULE_EXPORT void btn_trans_clk(GtkWidget *widget,
   std::list<coord> c = split(gtk_entry_get_text(data));
   gchar *obj = gtk_combo_box_text_get_active_text(combo);
 
-  if (obj && c.size() == 1) {
+  if ((obj != nullptr) && c.size() == 1) {
     objects.find(obj)->second.transform(m_transfer(c.front()));
     update();
   }
@@ -192,7 +211,7 @@ extern "C" G_MODULE_EXPORT void btn_scale_clk(GtkWidget *widget,
   std::list<coord> c = split(gtk_entry_get_text(data));
   gchar *obj = gtk_combo_box_text_get_active_text(combo);
 
-  if (obj && c.size() == 1) {
+  if ((obj != nullptr) && c.size() == 1) {
     drawable &d = objects.find(obj)->second;
     d.transform(m_transfer(-d.center()) * m_scale(c.front()) *
                 m_transfer(d.center()));
@@ -204,7 +223,7 @@ extern "C" G_MODULE_EXPORT void btn_delete_figure_clk() {
   GtkComboBoxText *combo =
       GTK_COMBO_BOX_TEXT(gtk_builder_get_object(builder, "comboBox"));
   gchar *obj = gtk_combo_box_text_get_active_text(combo);
-  if (obj) {
+  if (obj != nullptr) {
     gtk_combo_box_text_remove(combo,
                               gtk_combo_box_get_active(GTK_COMBO_BOX(combo)));
     objects.erase(obj);
