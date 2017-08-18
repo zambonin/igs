@@ -173,16 +173,35 @@ extern "C" G_MODULE_EXPORT void btn_rotate_clk(GtkWidget *widget,
   GtkEntry *data = GTK_ENTRY(gtk_builder_get_object(builder, "rotationDegree"));
   gchar *obj = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo));
 
+  GtkRadioButton *rotate_bycenter =
+      GTK_RADIO_BUTTON(gtk_builder_get_object(builder, "buttonByCenter"));
+  GtkRadioButton *rotate_bypoint =
+      GTK_RADIO_BUTTON(gtk_builder_get_object(builder, "buttonByPoint"));
+  GtkRadioButton *rotate_byworld =
+      GTK_RADIO_BUTTON(gtk_builder_get_object(builder, "buttonByWorld"));
+
   if (obj != nullptr) {
     try {
       double a = M_PI * std::stod(gtk_entry_get_text(data)) / 180;
       drawable &d = objects.find(obj)->second;
-      d.transform(m_transfer(-d.center()) * m_rotate(a) *
-                  m_transfer(d.center()));
+      if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(rotate_bycenter)) !=
+          0) {
+        d.transform(m_transfer(-d.center()) * m_rotate(a) *
+                    m_transfer(d.center()));
+      } else if (gtk_toggle_button_get_active(
+                     GTK_TOGGLE_BUTTON(rotate_bypoint)) != 0) {
+        GtkEntry *data_point =
+            GTK_ENTRY(gtk_builder_get_object(builder, "transferVector"));
+        std::list<coord> c = split(gtk_entry_get_text(data_point));
+        d.transform(m_transfer(-c.front()) * m_rotate(a) *
+                    m_transfer(c.front()));
+      } else if (gtk_toggle_button_get_active(
+                     GTK_TOGGLE_BUTTON(rotate_byworld)) != 0) {
+        d.transform(m_rotate(a));
+      }
       update();
     } catch (const std::invalid_argument &ia) {
     }
-    // TODO: Rotate based on any point.
     // TODO: utils.hpp (split and matrix functions)
   }
 }
