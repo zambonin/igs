@@ -162,7 +162,6 @@ extern "C" G_MODULE_EXPORT void btn_rotate_clk(
       update();
     } catch (const std::invalid_argument& ia) {}
 
-    // TODO Rotate based on any point.
     // TODO utils.hpp (split and matrix functions)
 
   }
@@ -179,10 +178,12 @@ extern "C" G_MODULE_EXPORT void btn_draw_figure_clk() {
 
   if (!name_entry.empty() && !c.empty()) {
     std::string s(name_entry);
-    objects.insert(std::pair<std::string, drawable>(s, drawable(s, c)));
+    if (objects.count(s) == 0) {
+      gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), NULL, s.c_str());
+    }
+    // TODO add delete figure button
+    objects.insert({s, drawable(s, c)});
     update();
-
-    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), NULL, s.c_str());
   }
 
   gtk_entry_set_text(name, "");
