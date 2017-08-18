@@ -93,7 +93,7 @@ extern "C" G_MODULE_EXPORT void btn_draw_figure_clk() {
   GtkEntry *name = GTK_ENTRY(gtk_builder_get_object(builder, "name")),
            *coor = GTK_ENTRY(gtk_builder_get_object(builder, "coord"));
   GtkComboBoxText *combo =
-      GTK_COMBO_BOX_TEXT(gtk_builder_get_object(builder, "comboBox"));
+      GTK_COMBO_BOX_TEXT(gtk_builder_get_object(builder, "combo"));
 
   std::string s(gtk_entry_get_text(name));
   std::list<coord> c = split(gtk_entry_get_text(coor));
@@ -157,7 +157,7 @@ extern "C" G_MODULE_EXPORT void btn_clear_clk() {
   objects.clear();
   w.reset();
   gtk_combo_box_text_remove_all(
-      GTK_COMBO_BOX_TEXT(gtk_builder_get_object(builder, "comboBox")));
+      GTK_COMBO_BOX_TEXT(gtk_builder_get_object(builder, "combo")));
   gtk_widget_queue_draw(window_widget);
 }
 
@@ -166,81 +166,42 @@ extern "C" G_MODULE_EXPORT void btn_center_clk() {
   update();
 }
 
-extern "C" G_MODULE_EXPORT void btn_rotate_clk(GtkWidget *widget,
-                                               GtkWidget *entry) {
+extern "C" G_MODULE_EXPORT void btn_trans_figure_clk(GtkWidget *widget,
+                                                     GtkWidget *entry) {
   GtkComboBoxText *combo =
-      GTK_COMBO_BOX_TEXT(gtk_builder_get_object(builder, "comboBox"));
-  GtkEntry *data = GTK_ENTRY(gtk_builder_get_object(builder, "rotationDegree"));
+      GTK_COMBO_BOX_TEXT(gtk_builder_get_object(builder, "combo"));
   gchar *obj = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo));
 
-  GtkRadioButton *rotate_bycenter =
-      GTK_RADIO_BUTTON(gtk_builder_get_object(builder, "buttonByCenter"));
-  GtkRadioButton *rotate_bypoint =
-      GTK_RADIO_BUTTON(gtk_builder_get_object(builder, "buttonByPoint"));
-  GtkRadioButton *rotate_byworld =
-      GTK_RADIO_BUTTON(gtk_builder_get_object(builder, "buttonByWorld"));
+  GtkComboBoxText *ops =
+      GTK_COMBO_BOX_TEXT(gtk_builder_get_object(builder, "operations"));
+  int op_id = gtk_combo_box_get_active(GTK_COMBO_BOX(ops));
 
-  if (obj != nullptr) {
-    try {
-      double a = M_PI * std::stod(gtk_entry_get_text(data)) / 180;
-      drawable &d = objects.find(obj)->second;
-      if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(rotate_bycenter)) !=
-          0) {
-        d.transform(m_transfer(-d.center()) * m_rotate(a) *
-                    m_transfer(d.center()));
-      } else if (gtk_toggle_button_get_active(
-                     GTK_TOGGLE_BUTTON(rotate_bypoint)) != 0) {
-        GtkEntry *data_point =
-            GTK_ENTRY(gtk_builder_get_object(builder, "transferVector"));
-        std::list<coord> c = split(gtk_entry_get_text(data_point));
-        d.transform(m_transfer(-c.front()) * m_rotate(a) *
-                    m_transfer(c.front()));
-      } else if (gtk_toggle_button_get_active(
-                     GTK_TOGGLE_BUTTON(rotate_byworld)) != 0) {
-        d.transform(m_rotate(a));
-      }
-      update();
-    } catch (const std::invalid_argument &ia) {
-    }
-    // TODO: utils.hpp (split and matrix functions)
+  GtkEntry *vector = GTK_ENTRY(gtk_builder_get_object(builder, "transfer"));
+  std::list<coord> c = split(gtk_entry_get_text(vector));
+
+  if (obj == nullptr || (c.empty() && op_id < 3)) {
+    return;
   }
-}
 
-extern "C" G_MODULE_EXPORT void btn_trans_clk(GtkWidget *widget,
-                                              GtkWidget *entry) {
-  GtkComboBoxText *combo =
-      GTK_COMBO_BOX_TEXT(gtk_builder_get_object(builder, "comboBox"));
-  GtkEntry *data = GTK_ENTRY(gtk_builder_get_object(builder, "transferVector"));
+  const double angle =
+    M_PI * std::stod(gtk_entry_get_text(GTK_ENTRY(entry))) / 180;
 
-  std::list<coord> c = split(gtk_entry_get_text(data));
-  gchar *obj = gtk_combo_box_text_get_active_text(combo);
+  drawable &d = objects.find(obj)->second;
+  std::map<int, matrix> bases = {
+    {0, m_transfer(c.front())},
+    {1, m_transfer(-d.center()) * m_scale(c.front()) * m_transfer(d.center())},
+    {2, m_transfer(-c.front()) * m_rotate(angle) * m_transfer(c.front())},
+    {3, m_rotate(angle)},
+    {4, m_transfer(-d.center()) * m_rotate(angle) * m_transfer(d.center())},
+  };
 
-  if ((obj != nullptr) && c.size() == 1) {
-    objects.find(obj)->second.transform(m_transfer(c.front()));
-    update();
-  }
-}
-
-extern "C" G_MODULE_EXPORT void btn_scale_clk(GtkWidget *widget,
-                                              GtkWidget *entry) {
-  GtkComboBoxText *combo =
-      GTK_COMBO_BOX_TEXT(gtk_builder_get_object(builder, "comboBox"));
-  GtkEntry *data = GTK_ENTRY(gtk_builder_get_object(builder, "scaleFactor"));
-
-  std::list<coord> c = split(gtk_entry_get_text(data));
-  gchar *obj = gtk_combo_box_text_get_active_text(combo);
-
-  if ((obj != nullptr) && c.size() == 1) {
-    drawable &d = objects.find(obj)->second;
-    d.transform(m_transfer(-d.center()) * m_scale(c.front()) *
-                m_transfer(d.center()));
-    update();
-  }
+  d.transform(bases.find(op_id)->second);
+  update();
 }
 
 extern "C" G_MODULE_EXPORT void btn_delete_figure_clk() {
   GtkComboBoxText *combo =
-      GTK_COMBO_BOX_TEXT(gtk_builder_get_object(builder, "comboBox"));
+      GTK_COMBO_BOX_TEXT(gtk_builder_get_object(builder, "combo"));
   gchar *obj = gtk_combo_box_text_get_active_text(combo);
   if (obj != nullptr) {
     gtk_combo_box_text_remove(combo,
