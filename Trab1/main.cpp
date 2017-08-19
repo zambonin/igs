@@ -1,55 +1,12 @@
-#include "structures.hpp"
-#include <cmath>
+#include "utils.hpp"
 #include <map>
-#include <sstream>
 
 static cairo_surface_t *surface = nullptr;
 
 GtkWidget *drawing_area, *window_widget, *combo;
 GtkBuilder *builder;
-
-matrix m_transfer(const coord& c) {
-  return matrix({{1, 0, 0}, {0, 1, 0}, {c.x, c.y, 1}});
-}
-
-matrix m_rotate(double a) {
-  return matrix({{cos(a), -sin(a), 0}, {sin(a), cos(a), 0}, {0, 0, 1}});
-}
-
-matrix m_scale(const coord& c) {
-  return matrix({{c.x, 0, 0}, {0, c.y, 0}, {0, 0, 1}});
-}
-
 std::map<std::string, drawable> objects;
 window w;
-
-std::list<coord> split(const char* input) {
-
-    std::list<coord> c;
-    std::list<double> tmp;
-
-    std::istringstream iss1(input);
-    std::string s1, s2;
-
-    while(getline(iss1, s1, ' ')) {
-        std::istringstream iss2(s1);
-        while(getline(iss2, s2, ';')) {
-            try {
-                tmp.push_back(std::stod(s2));
-            } catch (const std::invalid_argument& ia) {}
-        }
-        c.emplace_back(coord(tmp.front(), tmp.back()));
-
-        if (tmp.size() != 2) {
-            c.clear();
-            return c;
-        }
-        tmp.clear();
-    }
-
-    return c;
-
-}
 
 static void clear_surface() {
 
@@ -161,9 +118,6 @@ extern "C" G_MODULE_EXPORT void btn_rotate_clk(
       }
       update();
     } catch (const std::invalid_argument& ia) {}
-
-    // TODO utils.hpp (split and matrix functions)
-
   }
 
 }
@@ -181,7 +135,6 @@ extern "C" G_MODULE_EXPORT void btn_draw_figure_clk() {
     if (objects.count(s) == 0) {
       gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), NULL, s.c_str());
     }
-    // TODO add delete figure button
     objects.insert({s, drawable(s, c)});
     update();
   }
@@ -261,6 +214,16 @@ extern "C" G_MODULE_EXPORT void btn_center_clk() {
     w.reset();
 
     update();
+}
+
+extern "C" G_MODULE_EXPORT void btn_delete_figure_clk() {
+  gchar *obj = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo));
+  if (obj) {
+    gint pos = gtk_combo_box_get_active(GTK_COMBO_BOX(combo));
+    gtk_combo_box_text_remove(GTK_COMBO_BOX_TEXT(combo), pos);
+    objects.erase(obj);
+  }
+  update();
 }
 
 int main(int argc, char *argv[]) {
