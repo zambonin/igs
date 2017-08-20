@@ -1,250 +1,190 @@
 #include "utils.hpp"
+
 #include <map>
 
 static cairo_surface_t *surface = nullptr;
-
-GtkWidget *drawing_area, *window_widget, *combo;
 GtkBuilder *builder;
+GtkWidget *drawing_area, *window_widget;
+
 std::map<std::string, drawable> objects;
 window w;
 
 static void clear_surface() {
-
-    cairo_t *cr = cairo_create(surface);
-    cairo_set_source_rgb(cr, 1, 1, 1);
-    cairo_paint(cr);
-    cairo_destroy(cr);
-
+  cairo_t *cr = cairo_create(surface);
+  cairo_set_source_rgb(cr, 1, 1, 1);
+  cairo_paint(cr);
+  cairo_destroy(cr);
 }
 
-static gboolean configure_event_cb(GtkWidget *widget,
-        GdkEventConfigure *event, gpointer data) {
+static gboolean configure_event_cb(GtkWidget *widget, GdkEventConfigure *event,
+                                   gpointer data) {
+  if (surface != nullptr) {
+    cairo_surface_destroy(surface);
+  }
 
-    if (surface != nullptr) {
-        cairo_surface_destroy(surface);
-    }
+  surface = gdk_window_create_similar_surface(
+      gtk_widget_get_window(widget), CAIRO_CONTENT_COLOR,
+      gtk_widget_get_allocated_width(widget),
+      gtk_widget_get_allocated_height(widget));
+  clear_surface();
 
-    surface = gdk_window_create_similar_surface(gtk_widget_get_window(widget),
-            CAIRO_CONTENT_COLOR, gtk_widget_get_allocated_width(widget),
-            gtk_widget_get_allocated_height(widget));
-    clear_surface();
-
-    return TRUE;
-
+  return TRUE;
 }
 
 static gboolean draw_cb(GtkWidget *widget, cairo_t *cr, gpointer data) {
+  cairo_set_source_surface(cr, surface, 0, 0);
+  cairo_paint(cr);
 
-    cairo_set_source_surface(cr, surface, 0, 0);
-    cairo_paint(cr);
-
-    return FALSE;
-
+  return FALSE;
 }
 
 void update() {
-
-    clear_surface();
-    cairo_t *cr = cairo_create(surface);
-    for (auto& obj : objects) {
-        obj.second.viewport(drawing_area, w);
-        obj.second.draw(cr);
-    }
-    gtk_widget_queue_draw(window_widget);
-    cairo_destroy(cr);
-
-}
-
-extern "C" G_MODULE_EXPORT void btn_trans_clk(
-    GtkWidget *widget, GtkWidget *entry) {
-
-  GtkEntry *data = GTK_ENTRY(gtk_builder_get_object(builder, "transferVector"));
-  std::list<coord> c = split(gtk_entry_get_text(data));
-  gchar *obj = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo));
-
-  if (obj && c.size() == 1) {
-    objects.find(obj)->second.transform(m_transfer(c.front()));
-    update();
+  clear_surface();
+  cairo_t *cr = cairo_create(surface);
+  for (auto &obj : objects) {
+    obj.second.viewport(drawing_area, w);
+    obj.second.draw(cr);
   }
-
-}
-
-extern "C" G_MODULE_EXPORT void btn_scale_clk(
-    GtkWidget *widget, GtkWidget *entry) {
-
-  GtkEntry *data = GTK_ENTRY(gtk_builder_get_object(builder, "scaleFactor"));
-  std::list<coord> c = split(gtk_entry_get_text(data));
-  gchar *obj = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo));
-
-  if (obj && c.size() == 1) {
-    drawable& d = objects.find(obj)->second;
-    d.transform(
-        m_transfer(-d.center()) * m_scale(c.front()) * m_transfer(d.center()));
-    update();
-  }
-
-}
-
-
-extern "C" G_MODULE_EXPORT void btn_rotate_clk(
-    GtkWidget *widget, GtkWidget *entry) {
-
-  GtkEntry *data = GTK_ENTRY(gtk_builder_get_object(builder, "rotationDegree"));
-  gchar *obj = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo));
-
-  GtkRadioButton *rotate_bycenter = GTK_RADIO_BUTTON(gtk_builder_get_object(builder, "buttonByCenter"));
-  GtkRadioButton *rotate_bypoint = GTK_RADIO_BUTTON(gtk_builder_get_object(builder, "buttonByPoint"));
-  GtkRadioButton *rotate_byworld = GTK_RADIO_BUTTON(gtk_builder_get_object(builder, "buttonByWorld"));
-
-  if (obj) {
-    try {
-      double a = M_PI * std::stod(gtk_entry_get_text(data)) / 180;
-      drawable& d = objects.find(obj)->second;
-      if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(rotate_bycenter))) {
-        d.transform(
-          m_transfer(-d.center()) * m_rotate(a) * m_transfer(d.center()));
-      } else if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(rotate_bypoint))) {
-        GtkEntry *data_point = GTK_ENTRY(gtk_builder_get_object(builder, "transferVector"));
-        std::list<coord> c = split(gtk_entry_get_text(data_point));
-
-        d.transform(
-          m_transfer(-c.front()) * m_rotate(a) * m_transfer(c.front()));
-      } else if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(rotate_byworld))) {
-
-        d.transform(
-          m_rotate(a));
-      } else {
-          std::cout << "Select an option: " << std::endl;
-      }
-      update();
-    } catch (const std::invalid_argument& ia) {}
-  }
-
+  gtk_widget_queue_draw(window_widget);
+  cairo_destroy(cr);
 }
 
 extern "C" G_MODULE_EXPORT void btn_draw_figure_clk() {
-
   GtkEntry *name = GTK_ENTRY(gtk_builder_get_object(builder, "name")),
            *coor = GTK_ENTRY(gtk_builder_get_object(builder, "coord"));
+  GtkComboBoxText *combo =
+      GTK_COMBO_BOX_TEXT(gtk_builder_get_object(builder, "combo"));
 
-  std::string name_entry = std::string(gtk_entry_get_text(name));
+  std::string s(gtk_entry_get_text(name));
   std::list<coord> c = split(gtk_entry_get_text(coor));
 
-  if (!name_entry.empty() && !c.empty()) {
-    std::string s(name_entry);
-    if (objects.count(s) == 0) {
-      gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), NULL, s.c_str());
-    }
+  if (!s.empty() && !c.empty() && objects.count(s) == 0) {
+    gtk_combo_box_text_append(combo, nullptr, s.c_str());
     objects.insert({s, drawable(s, c)});
     update();
   }
 
   gtk_entry_set_text(name, "");
   gtk_entry_set_text(coor, "");
-
 }
 
-extern "C" G_MODULE_EXPORT void btn_pan_up_clk(
-        GtkWidget *widget, GtkWidget *entry) {
-
-    const double rate = std::stod(gtk_entry_get_text(GTK_ENTRY(entry)));
-    w.set_limits(0, 0, rate, rate);
-    update();
-
+extern "C" G_MODULE_EXPORT void btn_pan_up_clk(GtkWidget *widget,
+                                               GtkWidget *entry) {
+  const double rate = std::stod(gtk_entry_get_text(GTK_ENTRY(entry)));
+  w.set_limits(0, 0, rate, rate);
+  update();
 }
 
-extern "C" G_MODULE_EXPORT void btn_pan_left_clk(
-        GtkWidget *widget, GtkWidget *entry) {
-
-    const double rate = std::stod(gtk_entry_get_text(GTK_ENTRY(entry)));
-    w.set_limits(-1 * rate, -1 * rate, 0, 0);
-    update();
-
+extern "C" G_MODULE_EXPORT void btn_pan_left_clk(GtkWidget *widget,
+                                                 GtkWidget *entry) {
+  const double rate = std::stod(gtk_entry_get_text(GTK_ENTRY(entry)));
+  w.set_limits(-1 * rate, -1 * rate, 0, 0);
+  update();
 }
 
-extern "C" G_MODULE_EXPORT void btn_pan_right_clk(
-        GtkWidget *widget, GtkWidget *entry) {
-
-    const double rate = std::stod(gtk_entry_get_text(GTK_ENTRY(entry)));
-    w.set_limits(rate, rate, 0, 0);
-    update();
-
+extern "C" G_MODULE_EXPORT void btn_pan_right_clk(GtkWidget *widget,
+                                                  GtkWidget *entry) {
+  const double rate = std::stod(gtk_entry_get_text(GTK_ENTRY(entry)));
+  w.set_limits(rate, rate, 0, 0);
+  update();
 }
 
-extern "C" G_MODULE_EXPORT void btn_pan_down_clk(
-        GtkWidget *widget, GtkWidget *entry) {
-
-    const double rate = std::stod(gtk_entry_get_text(GTK_ENTRY(entry)));
-    w.set_limits(0, 0, -1 * rate, -1 * rate);
-    update();
-
+extern "C" G_MODULE_EXPORT void btn_pan_down_clk(GtkWidget *widget,
+                                                 GtkWidget *entry) {
+  const double rate = std::stod(gtk_entry_get_text(GTK_ENTRY(entry)));
+  w.set_limits(0, 0, -1 * rate, -1 * rate);
+  update();
 }
 
-extern "C" G_MODULE_EXPORT void btn_zoom_out_clk(
-        GtkWidget *widget, GtkWidget *entry) {
-
-    const double rate = std::stod(gtk_entry_get_text(GTK_ENTRY(entry)));
-    w.zoom(1 + rate);
-    update();
-
+extern "C" G_MODULE_EXPORT void btn_zoom_out_clk(GtkWidget *widget,
+                                                 GtkWidget *entry) {
+  const double rate = std::stod(gtk_entry_get_text(GTK_ENTRY(entry)));
+  w.zoom(1 + rate);
+  update();
 }
 
-extern "C" G_MODULE_EXPORT void btn_zoom_in_clk(
-        GtkWidget *widget, GtkWidget *entry) {
-
-    const double rate = std::stod(gtk_entry_get_text(GTK_ENTRY(entry)));
-    w.zoom(1 - rate);
-    update();
-
+extern "C" G_MODULE_EXPORT void btn_zoom_in_clk(GtkWidget *widget,
+                                                GtkWidget *entry) {
+  const double rate = std::stod(gtk_entry_get_text(GTK_ENTRY(entry)));
+  w.zoom(1 - rate);
+  update();
 }
 
-extern "C" G_MODULE_EXPORT void btn_exit_clk() {
-    gtk_main_quit();
-}
+extern "C" G_MODULE_EXPORT void btn_exit_clk() { gtk_main_quit(); }
 
 extern "C" G_MODULE_EXPORT void btn_clear_clk() {
-    clear_surface();
-    objects.clear();
-    w.reset();
-    gtk_combo_box_text_remove_all(GTK_COMBO_BOX_TEXT(combo));
-    gtk_widget_queue_draw(window_widget);
+  clear_surface();
+  objects.clear();
+  w.reset();
+  gtk_combo_box_text_remove_all(
+      GTK_COMBO_BOX_TEXT(gtk_builder_get_object(builder, "combo")));
+  gtk_widget_queue_draw(window_widget);
 }
 
 extern "C" G_MODULE_EXPORT void btn_center_clk() {
-    w.reset();
+  w.reset();
+  update();
+}
 
-    update();
+extern "C" G_MODULE_EXPORT void btn_trans_figure_clk(GtkWidget *widget,
+                                                     GtkWidget *entry) {
+  GtkComboBoxText *combo =
+      GTK_COMBO_BOX_TEXT(gtk_builder_get_object(builder, "combo"));
+  gchar *obj = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo));
+
+  GtkComboBoxText *ops =
+      GTK_COMBO_BOX_TEXT(gtk_builder_get_object(builder, "operations"));
+  int op_id = gtk_combo_box_get_active(GTK_COMBO_BOX(ops));
+
+  GtkEntry *vector = GTK_ENTRY(gtk_builder_get_object(builder, "transfer"));
+  std::list<coord> c = split(gtk_entry_get_text(vector));
+
+  if (obj == nullptr || (c.empty() && op_id < 3)) {
+    return;
+  }
+
+  const double angle =
+    M_PI * std::stod(gtk_entry_get_text(GTK_ENTRY(entry))) / 180;
+
+  drawable &d = objects.find(obj)->second;
+  std::map<int, matrix> bases = {
+    {0, m_transfer(c.front())},
+    {1, m_transfer(-d.center()) * m_scale(c.front()) * m_transfer(d.center())},
+    {2, m_transfer(-c.front()) * m_rotate(angle) * m_transfer(c.front())},
+    {3, m_rotate(angle)},
+    {4, m_transfer(-d.center()) * m_rotate(angle) * m_transfer(d.center())},
+  };
+
+  d.transform(bases.find(op_id)->second);
+  update();
 }
 
 extern "C" G_MODULE_EXPORT void btn_delete_figure_clk() {
-  gchar *obj = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo));
-  if (obj) {
-    gint pos = gtk_combo_box_get_active(GTK_COMBO_BOX(combo));
-    gtk_combo_box_text_remove(GTK_COMBO_BOX_TEXT(combo), pos);
+  GtkComboBoxText *combo =
+      GTK_COMBO_BOX_TEXT(gtk_builder_get_object(builder, "combo"));
+  gchar *obj = gtk_combo_box_text_get_active_text(combo);
+  if (obj != nullptr) {
+    gtk_combo_box_text_remove(combo,
+                              gtk_combo_box_get_active(GTK_COMBO_BOX(combo)));
     objects.erase(obj);
   }
   update();
 }
 
 int main(int argc, char *argv[]) {
+  gtk_init(&argc, &argv);
+  builder = gtk_builder_new_from_file("src/window.glade");
 
-    gtk_init(&argc, &argv);
+  window_widget = GTK_WIDGET(gtk_builder_get_object(builder, "main_window"));
+  drawing_area = GTK_WIDGET(gtk_builder_get_object(builder, "drawing_area"));
 
-    builder = gtk_builder_new_from_file("src/window.glade");
-    window_widget = GTK_WIDGET(gtk_builder_get_object(builder, "main_window"));
-    drawing_area = GTK_WIDGET(gtk_builder_get_object(builder, "drawing_area"));
+  g_signal_connect(drawing_area, "draw", G_CALLBACK(draw_cb), nullptr);
+  g_signal_connect(drawing_area, "configure-event",
+                   G_CALLBACK(configure_event_cb), nullptr);
 
-    combo = GTK_WIDGET(gtk_builder_get_object(builder, "comboBox"));
+  gtk_builder_connect_signals(builder, nullptr);
+  gtk_widget_show_all(window_widget);
+  gtk_main();
 
-    g_signal_connect(drawing_area, "draw",
-            G_CALLBACK(draw_cb), nullptr);
-    g_signal_connect(drawing_area, "configure-event",
-            G_CALLBACK(configure_event_cb), nullptr);
-
-    gtk_builder_connect_signals(builder, nullptr);
-    gtk_widget_show_all(window_widget);
-    gtk_main();
-
-    return 0;
-
+  return 0;
 }
