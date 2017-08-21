@@ -138,6 +138,9 @@ class window {
     this->ymax += l3;
     this->ymin += l4;
   }
+  void rotate(double a) {
+      this->angle += a;
+  }
 
   void zoom(double r) {
     this->xmax *= r;
@@ -147,6 +150,7 @@ class window {
   }
 
   void reset() {
+    this->angle = 0;
     this->xmax = 200;
     this->xmin = -200;
     this->ymax = 200;
@@ -217,8 +221,8 @@ class drawable {
   }
 
   coord center() {
-    coord sum = std::accumulate(normCoord.begin(), normCoord.end(), coord(0, 0));
-        return sum / normCoord.size();
+    coord sum = std::accumulate(orig.begin(), orig.end(), coord(0, 0));
+        return sum / orig.size();
   }
 
   const std::string name;

@@ -78,11 +78,15 @@ extern "C" G_MODULE_EXPORT void btn_draw_figure_clk() {
   gtk_entry_set_text(coor, "");
 }
 
-// extern "C" G_MODULE_EXPORT void btn_rotateleft_clk() {
+extern "C" G_MODULE_EXPORT void btn_rotateleft_clk() {
+    w->rotate(45);
+    update();
+}
 
-
-
-// }
+extern "C" G_MODULE_EXPORT void btn_rotateright_clk() {
+    w->rotate(-45);
+    update();
+}
 
 extern "C" G_MODULE_EXPORT void btn_pan_up_clk(GtkWidget *widget,
                                                GtkWidget *entry) {
@@ -120,14 +124,19 @@ extern "C" G_MODULE_EXPORT void btn_pan_down_clk(GtkWidget *widget,
 extern "C" G_MODULE_EXPORT void btn_zoom_out_clk(GtkWidget *widget,
                                                  GtkWidget *entry) {
   const double rate = std::stod(gtk_entry_get_text(GTK_ENTRY(entry)));
-  w->zoom(1 + rate);
+  // w->zoom(1 + rate);
+  w->transform(m_transfer(-coord(w->wCenterX,w->wCenterY)) * m_scale(coord(1+rate,1+rate)) *
+                                                   m_transfer(coord(w->wCenterX,w->wCenterY)));
+
   update();
 }
 
 extern "C" G_MODULE_EXPORT void btn_zoom_in_clk(GtkWidget *widget,
                                                 GtkWidget *entry) {
   const double rate = std::stod(gtk_entry_get_text(GTK_ENTRY(entry)));
-  w->zoom(1 - rate);
+  w->transform(m_transfer(-coord(w->wCenterX,w->wCenterY)) * m_scale(coord(1-rate,1-rate)) *
+                                                   m_transfer(coord(w->wCenterX,w->wCenterY)));
+  // w->zoom(1 - rate);
   update();
 }
 
@@ -172,7 +181,7 @@ extern "C" G_MODULE_EXPORT void btn_trans_figure_clk(GtkWidget *widget,
     {0, m_transfer(c.front())},
     {1, m_transfer(-d.center()) * m_scale(c.front()) * m_transfer(d.center())},
     {2, m_transfer(-c.front()) * m_rotate(angle) * m_transfer(c.front())},
-    {3, m_rotate(angle)},
+    {3, m_transfer(coord(0,0)) * m_rotate(angle)},
     {4, m_transfer(-d.center()) * m_rotate(angle) * m_transfer(d.center())},
   };
 
