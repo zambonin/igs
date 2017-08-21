@@ -8,38 +8,6 @@
 #include <string>
 #include <vector>
 
-class window {
- public:
-  explicit window(double _xmax = 100, double _xmin = 0,
-      double _ymax = 100, double _ymin = 0) noexcept
-    : xmax(_xmax), xmin(_xmin), ymax(_ymax), ymin(_ymin)
-  {
-    set_limits(0, 0, 0, 0);
-  }
-
-  void set_limits(double l1, double l2, double l3, double l4) {
-    this->xmax += l1;
-    this->xmin += l2;
-    this->ymax += l3;
-    this->ymin += l4;
-  }
-
-  void zoom(double r) {
-    this->xmax *= r;
-    this->xmin *= r;
-    this->ymax *= r;
-    this->ymin *= r;
-  }
-
-  void reset() {
-    this->xmax = 100;
-    this->xmin = 0;
-    this->ymax = 100;
-    this->ymin = 0;
-  }
-
-  double xmax, xmin, ymax, ymin;
-};
 
 class coord {
  public:
@@ -131,13 +99,74 @@ class matrix {
   std::vector<std::vector<double>> elem;
 };
 
+
+
+class window {
+ public:
+  explicit window(std::list<coord> _coords, double _xmax = 200, double _xmin = -200,
+      double _ymax = 200, double _ymin = -200) noexcept
+    : xmax(_xmax), xmin(_xmin), ymax(_ymax), ymin(_ymin), coords(_coords)
+  {
+    this->angle = 0;
+    updateMax();
+    set_limits(0, 0, 0, 0);
+  }
+
+  void transform(matrix m) {
+     for (auto& i : coords) {
+       matrix res = matrix({{i.x, i.y, i.z}}) * m;
+       i = coord(res[0][0], res[0][1], res[0][2]);
+     }
+     updateMax();
+  }
+
+  void updateMax() {
+    auto frst = this->coords.front();
+    auto last = this->coords.back();
+    this->xmax = frst.x;
+    this->ymax = frst.y;
+    this->xmin = last.x;
+    this->ymin = last.y;
+    this->wCenterX = (xmax+xmin)/2;
+    this->wCenterY = (ymax+ymin)/2;
+
+  }
+
+  void set_limits(double l1, double l2, double l3, double l4) {
+    this->xmax += l1;
+    this->xmin += l2;
+    this->ymax += l3;
+    this->ymin += l4;
+  }
+
+  void zoom(double r) {
+    this->xmax *= r;
+    this->xmin *= r;
+    this->ymax *= r;
+    this->ymin *= r;
+  }
+
+  void reset() {
+    this->xmax = 200;
+    this->xmin = -200;
+    this->ymax = 200;
+    this->ymin = -200;
+  }
+
+  double xmax, xmin, ymax, ymin;
+  std::list<coord> coords;
+  double wCenterX, wCenterY;
+  double angle;
+};
+
+
 class drawable {
  public:
   explicit drawable(std::string _name, const std::list<coord>& _orig)
-    : name(std::move(_name)), orig(_orig), actual(_orig) {}
+    : name(std::move(_name)), orig(_orig), vp(_orig), normCoord(_orig) {}
 
   void draw(cairo_t* cr) {
-    auto it = std::begin(actual), end = --std::end(actual);
+    auto it = std::begin(vp), end = --std::end(vp);
     while (it != end) {
       cairo_move_to(cr, (*it).x, (*it).y);
       ++it;
@@ -146,8 +175,8 @@ class drawable {
 
     cairo_set_line_width(cr, 2);
     cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
-    cairo_move_to(cr, actual.front().x, actual.front().y);
-    cairo_line_to(cr, actual.back().x, actual.back().y);
+    cairo_move_to(cr, vp.front().x, vp.front().y);
+    cairo_line_to(cr, vp.back().x, vp.back().y);
     cairo_stroke(cr);
   }
 
@@ -158,14 +187,14 @@ class drawable {
     return orig.size();
   }
 
-  void viewport(GtkWidget* area, const window& w) {
+  void viewport(GtkWidget* area, const window* w) {
     int wid, hei;
     gtk_widget_get_size_request(area, &wid, &hei);
-
-    auto it1 = orig.begin(), it2 = actual.begin();
-    for (; it1 != orig.end(); ++it1, ++it2) {
-      (*it2).x = (((*it1).x - w.xmin) / (w.xmax - w.xmin)) * (wid - 0);
-      (*it2).y = (1 - (((*it1).y - w.ymin) / (w.ymax - w.ymin))) * (hei - 0);
+    auto it1 = normCoord.begin(), it2 = vp.begin();
+    for (; it1 != normCoord.end(); ++it1, ++it2) {
+      std::cout << (*it1).x << (*it1).y << std::endl;
+      (*it2).x = (((*it1).x +1) / (2)) * (wid - 0);
+      (*it2).y = (1 - (((*it1).y +1) / (2))) * (hei - 0);
     }
   }
 
@@ -174,15 +203,26 @@ class drawable {
       matrix res = matrix({{i.x, i.y, i.z}}) * m;
       i = coord(res[0][0], res[0][1], res[0][2]);
     }
+
+  }
+
+  void transform_normalize(matrix m) {
+    auto it = normCoord.begin();
+    for (auto& i : orig) {
+      matrix res = matrix({{i.x, i.y, i.z}}) * m;
+      *it = coord(res[0][0], res[0][1], res[0][2]);
+      std::cout << " NormCoord: " << (*it).x << (*it).y << std::endl;
+      it++;
+    }
   }
 
   coord center() {
-    coord sum = std::accumulate(orig.begin(), orig.end(), coord(0, 0));
-    return sum / orig.size();
+    coord sum = std::accumulate(normCoord.begin(), normCoord.end(), coord(0, 0));
+        return sum / normCoord.size();
   }
 
   const std::string name;
-  std::list<coord> orig, actual;
+  std::list<coord> orig, vp, normCoord;
 };
 
 #endif // STRUCTURES_HPP

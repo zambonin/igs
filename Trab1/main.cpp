@@ -7,7 +7,7 @@ GtkBuilder *builder;
 GtkWidget *drawing_area, *window_widget;
 
 std::map<std::string, drawable> objects;
-window w;
+window *w;
 
 static void clear_surface() {
   cairo_t *cr = cairo_create(surface);
@@ -38,8 +38,18 @@ static gboolean draw_cb(GtkWidget *widget, cairo_t *cr, gpointer data) {
   return FALSE;
 }
 
+void normalize() {
+    for (auto& i: objects) {
+        std::cout << "Window Size: " << w->xmax << w->xmin << w->ymax << w->ymin << std::endl;
+
+        i.second.transform_normalize(m_transfer(-coord(w->wCenterX,w->wCenterY,1)) * m_rotate(-1*w->angle) *
+                                    m_scale(coord(2/(w->xmax-w->xmin), 2/(w->ymax-w->ymin), 1)));
+    }
+}
+
 void update() {
   clear_surface();
+  normalize();
   cairo_t *cr = cairo_create(surface);
   for (auto &obj : objects) {
     obj.second.viewport(drawing_area, w);
@@ -68,45 +78,56 @@ extern "C" G_MODULE_EXPORT void btn_draw_figure_clk() {
   gtk_entry_set_text(coor, "");
 }
 
+// extern "C" G_MODULE_EXPORT void btn_rotateleft_clk() {
+
+
+
+// }
+
 extern "C" G_MODULE_EXPORT void btn_pan_up_clk(GtkWidget *widget,
                                                GtkWidget *entry) {
   const double rate = std::stod(gtk_entry_get_text(GTK_ENTRY(entry)));
-  w.set_limits(0, 0, rate, rate);
+  // w->set_limits(0, 0, rate, rate);
+
+  w->transform(m_transfer(coord(0,rate)));
   update();
 }
 
 extern "C" G_MODULE_EXPORT void btn_pan_left_clk(GtkWidget *widget,
                                                  GtkWidget *entry) {
   const double rate = std::stod(gtk_entry_get_text(GTK_ENTRY(entry)));
-  w.set_limits(-1 * rate, -1 * rate, 0, 0);
+  // w->set_limits(-1 * rate, -1 * rate, 0, 0);
+  w->transform(m_transfer(coord(rate,0)));
   update();
 }
 
 extern "C" G_MODULE_EXPORT void btn_pan_right_clk(GtkWidget *widget,
                                                   GtkWidget *entry) {
   const double rate = std::stod(gtk_entry_get_text(GTK_ENTRY(entry)));
-  w.set_limits(rate, rate, 0, 0);
+  // w->set_limits(rate, rate, 0, 0);
+  w->transform(m_transfer(coord(-1*rate,0)));
   update();
 }
 
 extern "C" G_MODULE_EXPORT void btn_pan_down_clk(GtkWidget *widget,
                                                  GtkWidget *entry) {
   const double rate = std::stod(gtk_entry_get_text(GTK_ENTRY(entry)));
-  w.set_limits(0, 0, -1 * rate, -1 * rate);
+  // w->set_limits(0, 0, -1 * rate, -1 * rate);
+  w->transform(m_transfer(coord(0,-1*rate)));
   update();
 }
 
 extern "C" G_MODULE_EXPORT void btn_zoom_out_clk(GtkWidget *widget,
                                                  GtkWidget *entry) {
   const double rate = std::stod(gtk_entry_get_text(GTK_ENTRY(entry)));
-  w.zoom(1 + rate);
+  w->zoom(1 + rate);
   update();
 }
 
 extern "C" G_MODULE_EXPORT void btn_zoom_in_clk(GtkWidget *widget,
                                                 GtkWidget *entry) {
   const double rate = std::stod(gtk_entry_get_text(GTK_ENTRY(entry)));
-  w.zoom(1 - rate);
+  w->zoom(1 - rate);
   update();
 }
 
@@ -115,14 +136,14 @@ extern "C" G_MODULE_EXPORT void btn_exit_clk() { gtk_main_quit(); }
 extern "C" G_MODULE_EXPORT void btn_clear_clk() {
   clear_surface();
   objects.clear();
-  w.reset();
+  w->reset();
   gtk_combo_box_text_remove_all(
       GTK_COMBO_BOX_TEXT(gtk_builder_get_object(builder, "combo")));
   gtk_widget_queue_draw(window_widget);
 }
 
 extern "C" G_MODULE_EXPORT void btn_center_clk() {
-  w.reset();
+  w->reset();
   update();
 }
 
@@ -181,7 +202,9 @@ int main(int argc, char *argv[]) {
   g_signal_connect(drawing_area, "draw", G_CALLBACK(draw_cb), nullptr);
   g_signal_connect(drawing_area, "configure-event",
                    G_CALLBACK(configure_event_cb), nullptr);
-
+  //TODO change for something based on drawable_area!
+  std::list<coord> coords = split("200;200 200;-200 -200;200 -200;-200");
+  w = new window(coords);
   gtk_builder_connect_signals(builder, nullptr);
   gtk_widget_show_all(window_widget);
   gtk_main();
