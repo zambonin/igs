@@ -34,9 +34,7 @@ int main(int argc, char *argv[]) {
                    G_CALLBACK(configure_event_cb), nullptr);
 
   gtk_widget_get_size_request(drawing_area, &vp_width, &vp_height);
-  w.coords = std::list<coord>(
-      {coord(vp_width, vp_height), coord(-vp_width, vp_height),
-       coord(vp_width, -vp_height), coord(-vp_width, -vp_height)});
+  w = window(vp_width, vp_height);
 
   gtk_builder_connect_signals(builder, nullptr);
   gtk_widget_show_all(
