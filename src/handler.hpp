@@ -10,7 +10,7 @@ extern "C" G_MODULE_EXPORT void btn_draw_figure_clk() {
       GTK_COMBO_BOX_TEXT(gtk_builder_get_object(builder, "combo"));
 
   std::string s(gtk_entry_get_text(name));
-  std::list<coord> c = split(gtk_entry_get_text(coor));
+  std::list<coord> c = read_coord(gtk_entry_get_text(coor));
 
   if (!s.empty() && !c.empty() && objects.count(s) == 0) {
     gtk_combo_box_text_append(combo, nullptr, s.c_str());
@@ -95,7 +95,7 @@ extern "C" G_MODULE_EXPORT void btn_zoom_in_clk(GtkWidget *widget,
 extern "C" G_MODULE_EXPORT void btn_exit_clk() { gtk_main_quit(); }
 
 extern "C" G_MODULE_EXPORT void btn_center_clk() {
-  w.reset(vp_width, vp_height);
+  w = window(vp_width, vp_height);
   update();
 }
 
@@ -117,7 +117,7 @@ extern "C" G_MODULE_EXPORT void btn_trans_figure_clk(GtkWidget *widget,
   int op_id = gtk_combo_box_get_active(GTK_COMBO_BOX(ops));
 
   GtkEntry *vector = GTK_ENTRY(gtk_builder_get_object(builder, "transfer"));
-  std::list<coord> c = split(gtk_entry_get_text(vector));
+  std::list<coord> c = read_coord(gtk_entry_get_text(vector));
 
   if (obj == nullptr || (c.empty() && op_id < 3)) {
     return;
@@ -127,7 +127,7 @@ extern "C" G_MODULE_EXPORT void btn_trans_figure_clk(GtkWidget *widget,
       M_PI * std::stod(gtk_entry_get_text(GTK_ENTRY(entry))) / 180;
 
   drawable &d = objects.find(obj)->second;
-  std::map<int, matrix> bases = {
+  std::map<int, matrix<double>> bases = {
     {0, m_transfer(c.front())},
     {1, m_transfer(-d.center()) * m_scale(c.front()) * m_transfer(d.center())},
     {2, m_transfer(-c.front()) * m_rotate(angle) * m_transfer(c.front())},
@@ -146,8 +146,29 @@ extern "C" G_MODULE_EXPORT void btn_delete_figure_clk(GtkWidget *widget,
     gtk_combo_box_text_remove(GTK_COMBO_BOX_TEXT(combo),
                               gtk_combo_box_get_active(GTK_COMBO_BOX(combo)));
     objects.erase(obj);
+    update();
   }
-  update();
+}
+
+extern "C" G_MODULE_EXPORT void btn_add_obj_figure(GtkWidget *widget,
+                                                   GtkWidget *combo) {
+  gchar *file = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(widget));
+  drawable d = read_obj(file);
+  if (objects.count(d.name) == 0) {
+    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), nullptr,
+                              d.name.c_str());
+    objects.insert({d.name, d});
+    update();
+  }
+}
+
+extern "C" G_MODULE_EXPORT void btn_save_obj(GtkWidget *widget,
+                                             GtkWidget *combo) {
+  gchar *obj = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo));
+  if (obj != nullptr) {
+    std::string p(obj);
+    write_obj(p, objects.find(p)->second);
+  }
 }
 
 #endif // HANDLER_HPP
