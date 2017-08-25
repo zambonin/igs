@@ -2,17 +2,20 @@
 #define STRUCTURES_HPP
 
 #include <gtk/gtk.h>
+#include <iomanip>
 #include <iostream>
 #include <list>
 #include <numeric>
 #include <string>
 #include <vector>
 
-
 class coord {
  public:
   coord(double _x, double _y, double _z = 1)
     : x(_x), y(_y), z(_z) {}
+
+  coord(std::vector<double> c)
+    : x(c[0]), y(c[1]), z(c[2]) {}
 
   bool operator!=(const coord& rhs) {
     return this->x != rhs.x || this->y != rhs.y;
@@ -35,31 +38,33 @@ class coord {
   }
 
   friend std::ostream& operator<<(std::ostream& os, const coord& c) {
-    return os << "x: " << c.x << " y: " << c.y << std::endl;
+    os << std::setprecision(5) << std::fixed;
+    return os << "v " << c.x << " " << c.y << " " << c.z << std::endl;
   }
 
   double x, y, z;
 };
 
+template <typename T>
 class matrix {
  public:
   matrix(int _l = 3, int _c = 3)
-    : l(_l), c(_c), elem(_l, std::vector<double>(_c, 0)) {}
+    : l(_l), c(_c), elem(_l, std::vector<T>(_c, 0)) {}
 
-  matrix(std::vector<std::vector<double>> e)
+  matrix(std::vector<std::vector<T>> e)
     : l(e.size()), c(e[0].size()), elem(e) {}
 
-  std::vector<double>& operator[](int i) {
+  std::vector<T>& operator[](int i) {
     return elem[i];
   }
 
-  const std::vector<double>& operator[](int i) const {
+  const std::vector<T>& operator[](int i) const {
     return elem[i];
   }
 
-  matrix operator+(matrix& m) {
+  matrix<T> operator+(matrix& m) {
     if (l == m.l && c == m.c) {
-      matrix r(3, 3);
+      matrix<T> r(3, 3);
       for (int i = 0; i < l; ++i) {
         for (int j = 0; i < c; ++i) {
           r[i][j] += elem[i][j] + m[i][j];
@@ -71,11 +76,11 @@ class matrix {
     }
   }
 
-  matrix operator*(matrix m) {
-    matrix r(l, m.c);
+  matrix<T> operator*(matrix m) {
+    matrix<T> r(l, m.c);
     for (int i = 0; i < l; ++i) {
       for (int j = 0; j < m.c; ++j) {
-        double mul = 0;
+        T mul = 0;
         for (int k = 0; k < m.l; ++k) {
           mul += elem[i][k] * m[k][j];
         }
@@ -87,6 +92,7 @@ class matrix {
 
   friend std::ostream& operator<<(std::ostream& os, const matrix& m) {
     for (int i = 0; i < m.l; ++i) {
+      os << "f ";
       for (int j = 0; j < m.c; ++j) {
         os << m[i][j] << " ";
       }
@@ -96,10 +102,8 @@ class matrix {
   }
 
   int l, c;
-  std::vector<std::vector<double>> elem;
+  std::vector<std::vector<T>> elem;
 };
-
-
 
 class window {
  public:
@@ -112,9 +116,9 @@ class window {
     set_limits(0, 0, 0, 0);
   }
 
-  void transform(matrix m) {
+  void transform(matrix<double> m) {
      for (auto& i : coords) {
-       matrix res = matrix({{i.x, i.y, i.z}}) * m;
+       matrix<double> res = matrix<double>({{i.x, i.y, i.z}}) * m;
        i = coord(res[0][0], res[0][1], res[0][2]);
      }
      updateMax();
@@ -138,8 +142,9 @@ class window {
     this->ymax += l3;
     this->ymin += l4;
   }
+
   void rotate(double a) {
-      this->angle += a;
+    this->angle += a;
   }
 
   void zoom(double r) {
@@ -167,7 +172,20 @@ class window {
 class drawable {
  public:
   explicit drawable(std::string _name, const std::list<coord>& _orig)
-    : name(std::move(_name)), orig(_orig), vp(_orig), normCoord(_orig) {}
+    : name(std::move(_name)), orig(_orig), vp(_orig), normCoord(_orig) {
+      faces = matrix<int>(1, orig.size());
+      std::iota(faces[0].begin(), faces[0].end(), 1);
+    }
+
+  explicit drawable(std::string _name, const std::list<coord>& _orig,
+      const matrix<int>& _faces)
+    : name(std::move(_name)), orig(_orig), vp(_orig), normCoord(_orig),
+      faces(_faces) {}
+
+  friend std::ostream& operator<<(std::ostream& os, const drawable& d) {
+    for (auto &i : d.orig) os << i;
+    return os << d.faces;
+  }
 
   void draw(cairo_t* cr) {
     auto it = std::begin(vp), end = --std::end(vp);
@@ -191,42 +209,41 @@ class drawable {
     return orig.size();
   }
 
-  void viewport(GtkWidget* area, const window* w) {
+  void viewport(GtkWidget* area) {
     int wid, hei;
     gtk_widget_get_size_request(area, &wid, &hei);
     auto it1 = normCoord.begin(), it2 = vp.begin();
     for (; it1 != normCoord.end(); ++it1, ++it2) {
-      std::cout << (*it1).x << (*it1).y << std::endl;
       (*it2).x = (((*it1).x +1) / (2)) * (wid - 0);
       (*it2).y = (1 - (((*it1).y +1) / (2))) * (hei - 0);
     }
   }
 
-  void transform(matrix m) {
+  void transform(matrix<double> m) {
     for (auto& i : orig) {
-      matrix res = matrix({{i.x, i.y, i.z}}) * m;
+      matrix<double> res = matrix<double>({{i.x, i.y, i.z}}) * m;
       i = coord(res[0][0], res[0][1], res[0][2]);
     }
 
   }
 
-  void transform_normalize(matrix m) {
+  void transform_normalize(matrix<double> m) {
     auto it = normCoord.begin();
     for (auto& i : orig) {
-      matrix res = matrix({{i.x, i.y, i.z}}) * m;
+      matrix<double> res = matrix<double>({{i.x, i.y, i.z}}) * m;
       *it = coord(res[0][0], res[0][1], res[0][2]);
-      std::cout << " NormCoord: " << (*it).x << (*it).y << std::endl;
       it++;
     }
   }
 
   coord center() {
     coord sum = std::accumulate(orig.begin(), orig.end(), coord(0, 0));
-        return sum / orig.size();
+    return sum / orig.size();
   }
 
   const std::string name;
   std::list<coord> orig, vp, normCoord;
+  matrix<int> faces;
 };
 
 #endif // STRUCTURES_HPP

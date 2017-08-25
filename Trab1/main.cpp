@@ -46,7 +46,7 @@ void update() {
         m_transfer(-coord(w->wCenterX, w->wCenterY, 1)) *
         m_rotate(-1 * w->angle) *
         m_scale(coord(2 / (w->xmax - w->xmin), 2 / (w->ymax - w->ymin), 1)));
-    obj.second.viewport(drawing_area, w);
+    obj.second.viewport(drawing_area);
     obj.second.draw(cr);
   }
   gtk_widget_queue_draw(window_widget);
@@ -172,11 +172,11 @@ extern "C" G_MODULE_EXPORT void btn_trans_figure_clk(GtkWidget *widget,
       M_PI * std::stod(gtk_entry_get_text(GTK_ENTRY(entry))) / 180;
 
   drawable &d = objects.find(obj)->second;
-  std::map<int, matrix> bases = {
+  std::map<int, matrix<double>> bases = {
     {0, m_transfer(c.front())},
     {1, m_transfer(-d.center()) * m_scale(c.front()) * m_transfer(d.center())},
     {2, m_transfer(-c.front()) * m_rotate(angle) * m_transfer(c.front())},
-    {3, m_transfer(coord()) * m_rotate(angle)},
+    {3, m_transfer(coord(0, 0)) * m_rotate(angle)},
     {4, m_transfer(-d.center()) * m_rotate(angle) * m_transfer(d.center())},
   };
 
@@ -195,6 +195,26 @@ extern "C" G_MODULE_EXPORT void btn_delete_figure_clk(GtkWidget *widget,
   update();
 }
 
+extern "C" G_MODULE_EXPORT void btn_add_obj_figure(GtkWidget* widget,
+                                                   GtkWidget* combo) {
+  gchar* file = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(widget));
+  drawable d = read_obj(file);
+  if (objects.count(d.name) == 0) {
+    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), nullptr, d.name.c_str());
+    objects.insert({d.name, d});
+    update();
+  }
+}
+
+extern "C" G_MODULE_EXPORT void btn_save_obj(GtkWidget* widget,
+                                                   GtkWidget* combo) {
+  gchar *obj = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo));
+  if (obj != nullptr) {
+    std::string p(obj);
+    write_obj(p, objects.find(p)->second);
+  }
+}
+
 int main(int argc, char *argv[]) {
   gtk_init(&argc, &argv);
   builder = gtk_builder_new_from_file("src/window.glade");
@@ -205,9 +225,12 @@ int main(int argc, char *argv[]) {
   g_signal_connect(drawing_area, "draw", G_CALLBACK(draw_cb), nullptr);
   g_signal_connect(drawing_area, "configure-event",
                    G_CALLBACK(configure_event_cb), nullptr);
-  //TODO change for something based on drawable_area!
-  std::list<coord> coords = split("200;200 200;-200 -200;200 -200;-200");
-  w = new window(coords);
+
+  int wid, hei;
+  gtk_widget_get_size_request(drawing_area, &wid, &hei);
+  w = new window({coord(wid, hei), coord(wid, -hei), coord(-wid, hei),
+                  coord(-wid, -hei)});
+
   gtk_builder_connect_signals(builder, nullptr);
   gtk_widget_show_all(window_widget);
   gtk_main();
