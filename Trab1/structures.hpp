@@ -8,7 +8,8 @@
 #include <numeric>
 #include <string>
 #include <vector>
-
+#include <cmath>
+#include <algorithm>
 class coord {
  public:
   coord(double _x, double _y, double _z = 1)
@@ -202,6 +203,65 @@ class drawable {
     cairo_stroke(cr);
   }
 
+
+  bool line_clipping(int wid, int hei) {
+    int xmin= 10, xmax = wid-10, ymin = 10 ,ymax = hei-10;
+    double p1, p2, p3, p4, q1, q2, q3, q4;
+    auto it = std::begin(vp);
+    double x1 = (*it).x;
+    double y1 = (*it).y;
+    it++;
+    double x2 = (*it).x;
+    double y2 = (*it).y;
+    it--;
+    std::vector<double> lu1;
+    std::vector<double> lu2;
+    p1 = -1*(x2 - x1);
+    lu1.push_back(p1);
+    p2 = x2 - x1;
+    lu1.push_back(p2);
+    p3 = -1*(y2 - y1);
+    lu1.push_back(p3);
+    p4 = y2 - y1;
+    lu1.push_back(p4);
+
+    q1 = x1 - xmin;
+    lu2.push_back(q1);
+    q2 = xmax - x1;
+    lu2.push_back(q2);
+    q3 = y1 - ymin;
+    lu2.push_back(q3);
+    q4 = ymax - y1;
+    lu2.push_back(q4);
+    if ((p1 == 0 || p2 == 0 || p3 == 0 || p4 == 0) && (q1 < 0 || q2 < 0 || q3 < 0 || q4 < 0)) {
+        return false;
+    }
+
+    std::vector<double> r;
+    double u1 = 0.0, u2 = 1.0;
+    for (unsigned int i = 0; i < lu1.size(); ++i) {
+      r.emplace_back(lu2[i] / lu1[i]);
+      if (lu1[i] < 0)
+        u1 = std::max({u1, r[i]});
+      if (lu1[i] > 0)
+        u2 = std::min({u2, r[i]});
+    }
+
+    if (u1 > u2) {
+        return false;
+    }
+    if (u1 > 0) {
+        (*it).x = x1 + u1*(x2-x1);
+        (*it).y = y1 + u1*(y2-y1);
+    }
+    it++;
+    if (u2 < 1) {
+        (*it).x = x1 + u2*(x2-x1);
+        (*it).y = y1 + u2*(y2-y1);
+    }
+    return true;
+  }
+
   gint16 type() {
     if (orig.size() > 2) {
       return 2;
@@ -210,12 +270,10 @@ class drawable {
   }
 
   void viewport(GtkWidget* area) {
-    int wid, hei;
-    gtk_widget_get_size_request(area, &wid, &hei);
     auto it1 = normCoord.begin(), it2 = vp.begin();
     for (; it1 != normCoord.end(); ++it1, ++it2) {
-      (*it2).x = (((*it1).x +1) / (2)) * (wid - 0);
-      (*it2).y = (1 - (((*it1).y +1) / (2))) * (hei - 0);
+      (*it2).x = ((((*it1).x +1) / (2)) * (384 - 0)) + 10;
+      (*it2).y = ((1 - (((*it1).y +1) / (2))) * (384 - 0)) + 10;
     }
   }
 

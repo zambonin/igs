@@ -8,6 +8,7 @@ GtkWidget *drawing_area, *window_widget;
 
 std::map<std::string, drawable> objects;
 window *w;
+int vport_wid, vport_hei;
 
 static void clear_surface() {
   cairo_t *cr = cairo_create(surface);
@@ -38,8 +39,27 @@ static gboolean draw_cb(GtkWidget *widget, cairo_t *cr, gpointer data) {
   return FALSE;
 }
 
+void draw_border(int borderSize) {
+  clear_surface();
+  cairo_t *cr = cairo_create(surface);
+  drawable border("border",
+                  {coord(borderSize, borderSize),
+                   coord(vport_wid - borderSize, borderSize),
+                   coord(vport_wid - borderSize, vport_hei - borderSize),
+                   coord(borderSize, vport_hei - borderSize)});
+  border.transform_normalize(
+      m_transfer(-coord(w->wCenterX, w->wCenterY, 1)) *
+      m_rotate(-1 * w->angle) *
+      m_scale(coord(2 / (w->xmax - w->xmin), 2 / (w->ymax - w->ymin), 1)));
+
+  border.draw(cr);
+  gtk_widget_queue_draw(window_widget);
+  cairo_destroy(cr);
+}
+
 void update() {
   clear_surface();
+  draw_border(10);
   cairo_t *cr = cairo_create(surface);
   for (auto &obj : objects) {
     obj.second.transform_normalize(
@@ -47,7 +67,8 @@ void update() {
         m_rotate(-1 * w->angle) *
         m_scale(coord(2 / (w->xmax - w->xmin), 2 / (w->ymax - w->ymin), 1)));
     obj.second.viewport(drawing_area);
-    obj.second.draw(cr);
+    if (obj.second.line_clipping(vport_wid, vport_hei))
+      obj.second.draw(cr);
   }
   gtk_widget_queue_draw(window_widget);
   cairo_destroy(cr);
@@ -102,7 +123,7 @@ extern "C" G_MODULE_EXPORT void btn_pan_left_clk(GtkWidget *widget,
                                                  GtkWidget *entry) {
   const double rate = std::stod(gtk_entry_get_text(GTK_ENTRY(entry)));
   w->transform(m_transfer(-coord(w->wCenterX, w->wCenterY)) *
-               m_rotate(-w->angle) * m_transfer(coord(rate, 0)) *
+               m_rotate(-w->angle) * m_transfer(coord(-rate, 0)) *
                m_rotate(w->angle) *
                m_transfer(coord(w->wCenterX, w->wCenterY)));
   update();
@@ -112,7 +133,7 @@ extern "C" G_MODULE_EXPORT void btn_pan_right_clk(GtkWidget *widget,
                                                   GtkWidget *entry) {
   const double rate = std::stod(gtk_entry_get_text(GTK_ENTRY(entry)));
   w->transform(m_transfer(-coord(w->wCenterX, w->wCenterY)) *
-               m_rotate(-w->angle) * m_transfer(coord(-rate, 0)) *
+               m_rotate(-w->angle) * m_transfer(coord(rate, 0)) *
                m_rotate(w->angle) *
                m_transfer(coord(w->wCenterX, w->wCenterY)));
   update();
@@ -239,11 +260,9 @@ int main(int argc, char *argv[]) {
   g_signal_connect(drawing_area, "configure-event",
                    G_CALLBACK(configure_event_cb), nullptr);
 
-  int wid, hei;
-  gtk_widget_get_size_request(drawing_area, &wid, &hei);
+  gtk_widget_get_size_request(drawing_area, &vport_wid, &vport_hei);
   w = new window(
-      {coord(wid, hei), coord(wid, -hei), coord(-wid, hei), coord(-wid, -hei)});
-
+      {coord(vport_wid, vport_hei), coord(vport_wid, -vport_hei), coord(-vport_wid, vport_hei), coord(-vport_wid, -vport_hei)});
   gtk_builder_connect_signals(builder, nullptr);
   gtk_widget_show_all(window_widget);
   gtk_main();
