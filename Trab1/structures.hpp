@@ -8,6 +8,7 @@
 #include <numeric>
 #include <string>
 #include <vector>
+#include <cmath>
 
 class coord {
  public:
@@ -202,6 +203,64 @@ class drawable {
     cairo_stroke(cr);
   }
 
+
+  void line_clipping(int wid, int hei) {
+    int xmin= -1, xmax = 1, ymin = -1 ,ymax = 1;
+    double r1, r2, r3, r4, u1, u2;
+    int p1, p2, p3, p4, q1, q2, q3, q4;
+    auto it = std::begin(vp);
+    double x1 = (*it).x;
+    double y1 = (*it).y;
+    it++;
+    double x2 = (*it).x;
+    double y2 = (*it).y;
+    it--;
+    std::cout << "Point One: " << x1 << " " << y1 << std::endl;
+    std::cout << "Point Two: " << x2 << " " << y2 << std::endl;
+    p1 = -1*(abs(x1 - x2));
+    p2 = std::abs(x1 - x2);
+    p3 = -1*std::abs(y1 - y2);
+    p4 = std::abs(y1 - y2);
+    q1 = x1 - xmin;
+    q2 = xmax - x1;
+    q3 = y1 - ymin;
+    q4 = ymax - y1;
+
+    if (p1 == 0 || p2 == 0 || p3 == 0 || p4 == 0) {
+        if (q1 < 0 || q2 < 0 || q3 < 0 || q4 < 0) {
+            std::cout << "Out of bounds!" << std::endl;
+            return;
+        }
+        std::cout << "Out of bounds!" << std::endl;
+        return;
+    }
+    r1 = q1/p1;
+    r3 = q3/p3;
+    r2 = q2/p2;
+    r4 = q4/p4;
+
+    u1 = std::max(0.0, r1);
+    u1 = std::max(u1, r3);
+    u2 = std::min(1.0, r2);
+    u2 = std::min(u2, r4);
+
+    if (u1 > u2) {
+        std::cout << "Line Out of Bounds!" << std::endl;
+        return;
+    }
+    if (u1 > 0) {
+        std::cout << "Att1" << std::endl;
+        (*it).x = x1 + u1*(abs(x1-x2));
+        (*it).y = y1 + u1*(abs(y1-y2));
+    }
+    it++;
+    if (u2 < 1) {
+        std::cout << "Att2" << std::endl;
+        (*it).x = x2 + u2*(abs(x1-x2));
+        (*it).y = y2 + u2*(abs(y1-y2));
+    }
+  }
+
   gint16 type() {
     if (orig.size() > 2) {
       return 2;
@@ -211,12 +270,15 @@ class drawable {
 
   void viewport(GtkWidget* area) {
     int wid, hei;
+    int borderSize = 10;
     gtk_widget_get_size_request(area, &wid, &hei);
     auto it1 = normCoord.begin(), it2 = vp.begin();
     for (; it1 != normCoord.end(); ++it1, ++it2) {
-      (*it2).x = (((*it1).x +1) / (2)) * (wid - 0);
-      (*it2).y = (1 - (((*it1).y +1) / (2))) * (hei - 0);
+      (*it2).x = ((((*it1).x +1) / (2)) * (wid - 0)) + borderSize;
+      (*it2).y = ((1 - (((*it1).y +1) / (2))) * (hei - 0)) + borderSize;
     }
+    line_clipping(wid, hei);
+
   }
 
   void transform(matrix<double> m) {

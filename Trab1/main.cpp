@@ -38,8 +38,27 @@ static gboolean draw_cb(GtkWidget *widget, cairo_t *cr, gpointer data) {
   return FALSE;
 }
 
+void draw_border(int borderSize) {
+    int wid, hei;
+
+    clear_surface();
+    cairo_t *cr = cairo_create(surface);
+    gtk_widget_get_size_request(drawing_area, &wid, &hei);
+    drawable border("border", {coord(borderSize, borderSize), coord(wid-borderSize, borderSize),
+                                coord(wid-borderSize, hei-borderSize), coord(borderSize,hei-borderSize)});
+    border.transform_normalize(
+        m_transfer(-coord(w->wCenterX, w->wCenterY, 1)) *
+        m_rotate(-1 * w->angle) *
+        m_scale(coord(2 / (w->xmax - w->xmin), 2 / (w->ymax - w->ymin), 1)));
+
+    border.draw(cr);
+    gtk_widget_queue_draw(window_widget);
+    cairo_destroy(cr);
+}
+
 void update() {
   clear_surface();
+  draw_border(10);
   cairo_t *cr = cairo_create(surface);
   for (auto &obj : objects) {
     obj.second.transform_normalize(
@@ -52,6 +71,7 @@ void update() {
   gtk_widget_queue_draw(window_widget);
   cairo_destroy(cr);
 }
+
 
 extern "C" G_MODULE_EXPORT void btn_draw_figure_clk() {
   GtkEntry *name = GTK_ENTRY(gtk_builder_get_object(builder, "name")),
@@ -230,7 +250,6 @@ int main(int argc, char *argv[]) {
   gtk_widget_get_size_request(drawing_area, &wid, &hei);
   w = new window({coord(wid, hei), coord(wid, -hei), coord(-wid, hei),
                   coord(-wid, -hei)});
-
   gtk_builder_connect_signals(builder, nullptr);
   gtk_widget_show_all(window_widget);
   gtk_main();
