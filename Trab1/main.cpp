@@ -91,28 +91,40 @@ extern "C" G_MODULE_EXPORT void btn_rotateright_clk(GtkWidget *widget,
 extern "C" G_MODULE_EXPORT void btn_pan_up_clk(GtkWidget *widget,
                                                GtkWidget *entry) {
   const double rate = std::stod(gtk_entry_get_text(GTK_ENTRY(entry)));
-  w->transform(m_transfer(coord(0, rate)));
+  w->transform(m_transfer(-coord(w->wCenterX, w->wCenterY)) *
+               m_rotate(-w->angle) * m_transfer(coord(0, rate)) *
+               m_rotate(w->angle) *
+               m_transfer(coord(w->wCenterX, w->wCenterY)));
   update();
 }
 
 extern "C" G_MODULE_EXPORT void btn_pan_left_clk(GtkWidget *widget,
                                                  GtkWidget *entry) {
   const double rate = std::stod(gtk_entry_get_text(GTK_ENTRY(entry)));
-  w->transform(m_transfer(coord(rate, 0)));
+  w->transform(m_transfer(-coord(w->wCenterX, w->wCenterY)) *
+               m_rotate(-w->angle) * m_transfer(coord(rate, 0)) *
+               m_rotate(w->angle) *
+               m_transfer(coord(w->wCenterX, w->wCenterY)));
   update();
 }
 
 extern "C" G_MODULE_EXPORT void btn_pan_right_clk(GtkWidget *widget,
                                                   GtkWidget *entry) {
   const double rate = std::stod(gtk_entry_get_text(GTK_ENTRY(entry)));
-  w->transform(m_transfer(coord(-1 * rate, 0)));
+  w->transform(m_transfer(-coord(w->wCenterX, w->wCenterY)) *
+               m_rotate(-w->angle) * m_transfer(coord(-rate, 0)) *
+               m_rotate(w->angle) *
+               m_transfer(coord(w->wCenterX, w->wCenterY)));
   update();
 }
 
 extern "C" G_MODULE_EXPORT void btn_pan_down_clk(GtkWidget *widget,
                                                  GtkWidget *entry) {
   const double rate = std::stod(gtk_entry_get_text(GTK_ENTRY(entry)));
-  w->transform(m_transfer(coord(0, -1 * rate)));
+  w->transform(m_transfer(-coord(w->wCenterX, w->wCenterY)) *
+               m_rotate(-w->angle) * m_transfer(coord(0, -rate)) *
+               m_rotate(w->angle) *
+               m_transfer(coord(w->wCenterX, w->wCenterY)));
   update();
 }
 
@@ -195,19 +207,20 @@ extern "C" G_MODULE_EXPORT void btn_delete_figure_clk(GtkWidget *widget,
   update();
 }
 
-extern "C" G_MODULE_EXPORT void btn_add_obj_figure(GtkWidget* widget,
-                                                   GtkWidget* combo) {
-  gchar* file = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(widget));
+extern "C" G_MODULE_EXPORT void btn_add_obj_figure(GtkWidget *widget,
+                                                   GtkWidget *combo) {
+  gchar *file = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(widget));
   drawable d = read_obj(file);
   if (objects.count(d.name) == 0) {
-    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), nullptr, d.name.c_str());
+    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), nullptr,
+                              d.name.c_str());
     objects.insert({d.name, d});
     update();
   }
 }
 
-extern "C" G_MODULE_EXPORT void btn_save_obj(GtkWidget* widget,
-                                                   GtkWidget* combo) {
+extern "C" G_MODULE_EXPORT void btn_save_obj(GtkWidget *widget,
+                                             GtkWidget *combo) {
   gchar *obj = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo));
   if (obj != nullptr) {
     std::string p(obj);
@@ -228,8 +241,8 @@ int main(int argc, char *argv[]) {
 
   int wid, hei;
   gtk_widget_get_size_request(drawing_area, &wid, &hei);
-  w = new window({coord(wid, hei), coord(wid, -hei), coord(-wid, hei),
-                  coord(-wid, -hei)});
+  w = new window(
+      {coord(wid, hei), coord(wid, -hei), coord(-wid, hei), coord(-wid, -hei)});
 
   gtk_builder_connect_signals(builder, nullptr);
   gtk_widget_show_all(window_widget);
