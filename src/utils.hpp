@@ -40,7 +40,7 @@ std::list<coord> viewport(const std::list<coord> &cs) {
 }
 
 void transform(const matrix<double> &m, std::list<coord> &from,
-                      std::list<coord> &to) {
+               std::list<coord> &to) {
   auto it = to.begin();
   for (auto &i : from) {
     matrix<double> res = matrix<double>({{i.x, i.y, i.z}}) * m;
@@ -143,6 +143,24 @@ void update() {
   gtk_widget_queue_draw(
       GTK_WIDGET(gtk_builder_get_object(builder, "main_window")));
   cairo_destroy(cr);
+}
+
+void pan(const coord &c) {
+  transform(m_transfer(-w.center()) * m_rotate(-w.angle) * m_transfer(c) *
+                m_rotate(w.angle) * m_transfer(w.center()),
+            w.coords);
+  update();
+}
+
+void rotate(double angle) {
+  w.angle += (M_PI / 180) * angle;
+  update();
+}
+
+void zoom(const coord &c) {
+  transform(m_transfer(-w.center()) * m_scale(c) * m_transfer(w.center()),
+            w.coords);
+  update();
 }
 
 #endif // UTILS_HPP
