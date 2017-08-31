@@ -145,4 +145,22 @@ void update() {
   cairo_destroy(cr);
 }
 
+void pan(const coord &c) {
+  transform(m_transfer(-w.center()) * m_rotate(-w.angle) * m_transfer(c) *
+                m_rotate(w.angle) * m_transfer(w.center()),
+            w.coords);
+  update();
+}
+
+void rotate(double angle) {
+  w.angle += (M_PI / 180) * angle;
+  update();
+}
+
+void zoom(const coord &c) {
+  transform(m_transfer(-w.center()) * m_scale(c) * m_transfer(w.center()),
+            w.coords);
+  update();
+}
+
 #endif // UTILS_HPP
