@@ -203,6 +203,45 @@ class drawable {
     cairo_stroke(cr);
   }
 
+  bool clipping(int wid, int hei) {
+      if (this->type() == 1) {
+          return point_clipping(wid,hei);
+      }
+      if (this->type() == 2) {
+          return line_clipping(wid, hei);
+      }
+      return true;
+          //poligon_clipping(wid, hei);
+  }
+
+  bool poligon_clipping(int wid, int hei) {
+      auto it = std::begin(vp), end = --std::end(vp);
+      std::list<coord> coords;
+      drawable *d;
+      while(it != end) {
+          d = new drawable("dummy", {coord((*it).x, (*it).y), coord((*it++).x, (*it++).y)});
+          it--;
+          d->line_clipping(wid, hei);
+          auto iterate = std::begin(d->vp), endIt = --std::end(d->vp);
+          while (iterate != endIt) {
+            coords.emplace_back(*iterate);
+            iterate++;
+          }
+          it++;
+      }
+      vp = coords;
+  }
+
+  bool point_clipping(int wid, int hei) {
+      double x1 = (*std::begin(vp)).x;
+      double y1 = (*std::begin(vp)).y;
+      if (x1 >= wid-10 || x1 <= 10) {
+          return false;
+      } else if (y1 >=hei-10 || y1 <= 10) {
+          return false;
+      }
+      return true;
+  }
 
   bool line_clipping(int wid, int hei) {
     int xmin= 10, xmax = wid-10, ymin = 10 ,ymax = hei-10;
@@ -264,7 +303,7 @@ class drawable {
 
   gint16 type() {
     if (orig.size() > 2) {
-      return 2;
+      return 3;
     }
     return orig.size();
   }

@@ -67,7 +67,7 @@ void update() {
         m_rotate(-1 * w->angle) *
         m_scale(coord(2 / (w->xmax - w->xmin), 2 / (w->ymax - w->ymin), 1)));
     obj.second.viewport(drawing_area);
-    if (obj.second.line_clipping(vport_wid, vport_hei))
+    if (obj.second.clipping(vport_wid, vport_hei))
       obj.second.draw(cr);
   }
   gtk_widget_queue_draw(window_widget);
