@@ -54,14 +54,12 @@ extern "C" G_MODULE_EXPORT void btn_pan_down_clk(GtkWidget *widget,
 
 extern "C" G_MODULE_EXPORT void btn_zoom_out_clk(GtkWidget *widget,
                                                  GtkWidget *entry) {
-  const double rate = std::stod(gtk_entry_get_text(GTK_ENTRY(entry)));
-  zoom(coord(1 + rate, 1 + rate));
+  zoom(1 + std::stod(gtk_entry_get_text(GTK_ENTRY(entry))));
 }
 
 extern "C" G_MODULE_EXPORT void btn_zoom_in_clk(GtkWidget *widget,
                                                 GtkWidget *entry) {
-  const double rate = std::stod(gtk_entry_get_text(GTK_ENTRY(entry)));
-  zoom(coord(1 - rate, 1 - rate));
+  zoom(1 - std::stod(gtk_entry_get_text(GTK_ENTRY(entry))));
 }
 
 extern "C" G_MODULE_EXPORT void btn_exit_clk() { gtk_main_quit(); }
@@ -127,7 +125,7 @@ extern "C" G_MODULE_EXPORT void btn_add_obj_figure(GtkWidget *widget,
                                                    GtkWidget *combo) {
   gchar *file = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(widget));
   drawable d = read_obj(file);
-  if (objects.count(d.name) == 0) {
+  if (objects.count(d.name) == 0 && d.orig.size() > 0) {
     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), nullptr,
                               d.name.c_str());
     objects.insert({d.name, d});

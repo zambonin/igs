@@ -92,38 +92,23 @@ public:
 class window {
 public:
   explicit window(int width = 1, int height = 1)
-      : xmax(width), xmin(-width), ymax(height), ymin(-height),
-        coords({coord(width, height), coord(-width, height),
-                coord(width, -height), coord(-width, -height)}) {}
+      : wid(width), hei(height), center(coord(0, 0)) {}
 
-  void update_coord() {
-    auto frst = this->coords.front();
-    auto last = this->coords.back();
-    this->xmax = frst.x;
-    this->ymax = frst.y;
-    this->xmin = last.x;
-    this->ymin = last.y;
-  }
-
-  coord center() {
-    return coord(this->xmax + this->xmin, this->ymax + this->ymin) / 2;
-  }
-
-  double xmax, xmin, ymax, ymin, angle;
-  std::list<coord> coords;
+  double wid, hei, angle;
+  coord center;
 };
 
 class drawable {
 public:
   explicit drawable(std::string _name, const std::list<coord> &_orig)
-      : name(std::move(_name)), orig(_orig), actual(_orig) {
+      : name(std::move(_name)), orig(_orig), scn(_orig) {
     faces = matrix<int>(1, orig.size());
     std::iota(faces[0].begin(), faces[0].end(), 1);
   }
 
   explicit drawable(std::string _name, const std::list<coord> &_orig,
                     const matrix<int> &_faces)
-      : name(std::move(_name)), orig(_orig), actual(_orig), faces(_faces) {}
+      : name(std::move(_name)), orig(_orig), scn(_orig), faces(_faces) {}
 
   friend std::ostream &operator<<(std::ostream &os, const drawable &d) {
     for (auto &i : d.orig) {
@@ -149,7 +134,7 @@ public:
 
   gint16 type() {
     if (orig.size() > 2) {
-      return 2;
+      return 3;
     }
     return orig.size();
   }
@@ -160,7 +145,7 @@ public:
   }
 
   const std::string name;
-  std::list<coord> orig, actual;
+  std::list<coord> orig, scn;
   matrix<int> faces;
 };
 

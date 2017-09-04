@@ -589,7 +589,7 @@
                   <object class="GtkLabel">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">Window</property>
+                    <property name="label" translatable="yes">Viewport</property>
                   </object>
                 </child>
               </object>
