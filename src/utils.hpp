@@ -43,13 +43,16 @@ void transform(const matrix<double> &m, std::list<coord> &from,
                std::list<coord> &to) {
   auto it = to.begin();
   for (auto &i : from) {
-    matrix<double> res = matrix<double>({{i.x, i.y, i.z}}) * m;
-    *it++ = coord(res[0][0], res[0][1], res[0][2]);
+    *it++ = coord((matrix<double>({{i.x, i.y, i.z}}) * m)[0]);
   }
 }
 
 void transform(const matrix<double> &m, std::list<coord> &cs) {
   transform(m, cs, cs);
+}
+
+void transform(const matrix<double> &m, coord &c) {
+  c = coord((matrix<double>({{c.x, c.y, c.z}}) * m)[0]);
 }
 
 template <typename Out>
@@ -111,7 +114,10 @@ drawable read_obj(const std::string &path) {
         points.emplace_back(point);
       }
     }
+    faces.at(0);
   } catch (const std::invalid_argument &ia) {
+    return drawable(name, {});
+  } catch (const std::out_of_range &o) {
     return drawable(name, {});
   }
   return drawable(name, points, matrix<int>(faces));
@@ -129,15 +135,14 @@ void clear_surface() {
 }
 
 void update() {
-  w.update_coord();
   clear_surface();
   cairo_t *cr = cairo_create(surface);
 
   for (auto &obj : objects) {
-    transform(m_transfer(-w.center()) * m_rotate(-w.angle) *
-                  m_scale(coord(2 / (w.xmax - w.xmin), 2 / (w.ymax - w.ymin))),
-              obj.second.orig, obj.second.actual);
-    obj.second.draw(cr, viewport(obj.second.actual));
+    transform(m_transfer(-w.center) * m_rotate(-w.angle) *
+                  m_scale(coord(1 / w.wid, 1 / w.hei)),
+              obj.second.orig, obj.second.scn);
+    obj.second.draw(cr, viewport(obj.second.scn));
   }
 
   gtk_widget_queue_draw(
@@ -146,20 +151,19 @@ void update() {
 }
 
 void pan(const coord &c) {
-  transform(m_transfer(-w.center()) * m_rotate(-w.angle) * m_transfer(c) *
-                m_rotate(w.angle) * m_transfer(w.center()),
-            w.coords);
+  transform(m_transfer(c), w.center);
   update();
 }
 
-void rotate(double angle) {
+void rotate(const double angle) {
   w.angle += (M_PI / 180) * angle;
+  transform(m_rotate(w.angle), w.center);
   update();
 }
 
-void zoom(const coord &c) {
-  transform(m_transfer(-w.center()) * m_scale(c) * m_transfer(w.center()),
-            w.coords);
+void zoom(const double rate) {
+  w.wid *= rate;
+  w.hei *= rate;
   update();
 }
 
