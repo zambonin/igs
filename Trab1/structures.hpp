@@ -208,37 +208,11 @@ class drawable {
                 return point_clipping(wid,hei);
             }
             if (this->type() == 2) {
-                return line_clipping(wid, hei);
+                return line_clipping(wid, hei, 1);
             }
             return poligon_clipping(wid, hei);
         }
 
-        // coord* intersection(coord p1, coord p2, coord p3, coord p4) {
-        //     // Store the values for fast access and easy
-        //     // equations-to-code conversion
-        //     double x1 = p1.x, x2 = p2.x, x3 = p3.x, x4 = p4.x;
-        //     double y1 = p1.y, y2 = p2.y, y3 = p3.y, y4 = p4.y;
-        //
-        //     double d = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
-        //     // If d is zero, there is no intersection
-        //     if (!(d != 0)) return NULL;
-        //
-        //     // Get the x and y
-        //     double pre = (x1*y2 - y1*x2), post = (x3*y4 - y3*x4);
-        //     double x = ( pre * (x3 - x4) - (x1 - x2) * post ) / d;
-        //     double y = ( pre * (y3 - y4) - (y1 - y2) * post ) / d;
-        //
-        //     // Check if the x and y coordinates are within both lines
-        //     if ( x < std::min(x1, x2) || x > std::max(x1, x2) ||
-        //             x < std::min(x3, x4) || x > std::max(x3, x4) ) return NULL;
-        //     if ( y < std::min(y1, y2) || y > std::max(y1, y2) ||
-        //             y < std::min(y3, y4) || y > std::max(y3, y4) ) return NULL;
-        //
-        //     // Return the point of intersection
-        //     //
-        //     coord* ret = new coord(x,y);
-        //     return ret;
-        // }
         bool intersection(std::vector<coord> segment1, std::vector<coord> segment2, coord& result){
             double p0_x=segment1[0].x,  p0_y=segment1[0].y,
                    p1_x=segment1[1].x, p1_y=segment1[1].y,
@@ -288,7 +262,7 @@ class drawable {
             std::vector<coord> coords, oldCoords;
             std::vector<coord> vpCoords = {coord(10,10), coord(10,hei-10), coord(wid-10,hei-10), coord(wid-10,10)};
             oldCoords.assign(vp.begin(), vp.end());
-            std::cout << "NEW CLIPPING!!!" << std::endl;
+            // std::cout << "NEW CLIPPING!!!" << std::endl;
 
             for (int j = 0; j < oldCoords.size(); j++) {
 
@@ -296,38 +270,38 @@ class drawable {
                     coord(oldCoords[(j+1)%oldCoords.size()].x,
                             oldCoords[(j+1)%oldCoords.size()].y)};
                 int count = 0;
-                std::cout << "-------------------------------------------------" << std::endl;
+                // std::cout << "-------------------------------------------------" << std::endl;
                 for (int i = 0; i < vpCoords.size(); i++) {
                     std::vector<coord> window_line = {coord(vpCoords[i].x, vpCoords[i].y),
                     coord(vpCoords[(i+1)%vpCoords.size()].x,
                             vpCoords[(i+1)%vpCoords.size()].y)};
 
-                    for (auto& i: window_line) {
-                        std::cout << "Wline: " << i << std::endl;
-                    }
+                    // for (auto& i: window_line) {
+                        // std::cout << "Wline: " << i << std::endl;
+                    // }
 
-                    for (auto& i: polygon_line) {
-                        std::cout << "Pline: " << i << std::endl;
-                    }
+                    // for (auto& i: polygon_line) {
+                        // std::cout << "Pline: " << i << std::endl;
+                    // }
                     bool sourceOut = ((window_line[1].x - window_line[0].x)*(polygon_line[0].y - window_line[0].y) > (window_line[1].y - window_line[0].y)*(polygon_line[0].x - window_line[0].x));
                     bool targetOut = ((window_line[1].x - window_line[0].x)*(polygon_line[1].y - window_line[0].y) > (window_line[1].y - window_line[0].y)*(polygon_line[1].x - window_line[0].x));
 
 
                     if (sourceOut && !targetOut) {
-                        std::cout << "Entered!" << std::endl;
+                        // std::cout << "Entered!" << std::endl;
                         coord out;
                         intersection(polygon_line, window_line, out);
-                        std::cout << "Emplaced!! " << out << std::endl;
+                        // std::cout << "Emplaced!! " << out << std::endl;
                         coords.push_back(out);
                         coords.push_back(polygon_line[1]);
 
                     }
                     if (targetOut && !sourceOut) {
-                        std::cout << "Entered1!" << std::endl;
+                        // std::cout << "Entered1!" << std::endl;
                         coord out;
                         intersection(polygon_line, window_line, out);
                         coords.push_back(polygon_line[0]);
-                        std::cout << "Emplaced!! " << out << std::endl;
+                        // std::cout << "Emplaced!! " << out << std::endl;
                         coords.push_back(out);
 
                     }
@@ -360,7 +334,167 @@ class drawable {
             return true;
         }
 
-        bool line_clipping(int wid, int hei) {
+        bool line_clipping(int wid, int hei, int type) {
+            if (type) {
+                return cohen_suterland(wid, hei);
+            }
+            return liang_barsky(wid, hei);
+        }
+
+        bool cohen_suterland(int wid, int hei) {
+            int u = 8, l = 1, r = 2,  b = 4, ul = 9, ur = 10, bl = 5, br = 6, i = 0;
+            int xmin = 10, xmax = wid-10, ymin = 10, ymax = hei-10;
+            int RC1 = 0, RC2 = 0;
+            auto source = std::begin(vp), target = --std::end(vp);
+            //RC1
+            if ((*source).x < xmin) {
+                if ((*source).y < ymin) {
+                    RC1 = bl;
+                } else if ((*source).y > ymax) {
+                    RC1 = ul;
+
+                } else {
+                    RC1 = l;
+                }
+            } else if ((*source).x > xmax) {
+                if ((*source).y < ymin) {
+                    RC1 = br;
+
+                } else if ((*source).y > ymax) {
+                    RC1 = ur;
+                } else {
+                    RC1 = r;
+                }
+            } else {
+                if ((*source).y < ymin) {
+                    RC1 = b;
+
+                } else if ((*source).y > ymax) {
+                    RC1 = u;
+                } else {
+                    RC1 = i;
+                }
+            }
+            // RC2
+            if ((*target).x < xmin) {
+                if ((*target).y < ymin) {
+                    RC2 = bl;
+                } else if ((*target).y > ymax) {
+                    RC2 = ul;
+
+                } else {
+                    RC2 = l;
+                }
+            } else if ((*target).x > xmax) {
+                if ((*target).y < ymin) {
+                    RC2 = br;
+
+                } else if ((*target).y > ymax) {
+                    RC2 = ur;
+                } else {
+                    RC2 = r;
+                }
+            } else {
+                if ((*target).y < ymin) {
+                    RC2 = b;
+
+                } else if ((*target).y > ymax) {
+                    RC2 = u;
+                } else {
+                    RC2 = i;
+                }
+            }
+
+
+            if ((RC1 == RC2) && RC1 == 0) {
+                return true;
+            }
+            int RCr = RC1 & RC2;
+            std::cout << "RCr: " << RCr << std::endl;
+            if (RCr != 0) {
+                return false;
+            }
+            if (RC1 != RC2) {
+                if(!(RC1 & RC2)) {
+                    double m = ((*target).y - (*source).y) / ((*target).x - (*source).x);
+                    //source
+                    if (RC1 != 0) {
+                        if (RC1 == u) {
+                            (*source).x = (*source).x + (1/m)*(ymax - (*source).y);
+                            (*source).y = ymax;
+                        }
+                        if (RC1 == b) {
+                            (*source).x = (*source).x + (1/m)*(ymin - (*source).y);
+                            (*source).y = ymin;
+                        }
+                        if (RC1 == l) {
+                            (*source).x = xmin;
+                            (*source).y = m*(xmin - (*source).x) + (*source).y;
+                        }
+                        if (RC1 == r) {
+                            (*source).x = xmax;
+                            (*source).y = m*(xmax - (*source).x) + (*source).y;
+                        }
+                        if (RC1 == ul) {
+                            (*source).x = xmin;
+                            (*source).y = ymax;
+                        }
+                        if (RC1 == ur) {
+                            (*source).x = xmax;
+                            (*source).y = ymax;
+                        }
+                        if (RC1 == bl) {
+                            (*source).x = xmin;
+                            (*source).y = ymin;
+                        }
+                        if (RC1 == br) {
+                            (*source).x = xmax;
+                            (*source).y = ymin;
+                        }
+                    }
+                    //target
+                    if (RC2 != 0) {
+                        std::cout << "Entered RC2!" << RC2 << std::endl;
+                        if (RC2 == u) {
+                            (*target).x = (*source).x + (1/m)*(ymax - (*source).y);
+                            (*target).y = ymax;
+                        }
+                        if (RC2 == b) {
+                            (*target).x = (*source).x + (1/m)*(ymin - (*source).y);
+                            (*target).y = ymin;
+                        }
+                        if (RC2 == l) {
+                            (*target).x = xmin;
+                            (*target).y = m*(xmin - (*source).x) + (*source).y;
+                        }
+                        if (RC2 == r) {
+                            (*target).x = xmax;
+                            (*target).y = m*(xmax - (*source).x) + (*source).y;
+                        }
+                        if (RC2 == ul) {
+                            (*target).x = xmin;
+                            (*target).y = ymax;
+                        }
+                        if (RC2 == ur) {
+                            (*target).x = xmax;
+                            (*target).y = ymax;
+                        }
+                        if (RC2 == bl) {
+                            (*target).x = xmin;
+                            (*target).y = ymin;
+                        }
+                        if (RC2 == br) {
+                            (*target).x = xmax;
+                            (*target).y = ymin;
+                        }
+                    }
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        bool liang_barsky(int wid, int hei) {
             int xmin= 10, xmax = wid-10, ymin = 10 ,ymax = hei-10;
             double p1, p2, p3, p4, q1, q2, q3, q4;
             auto it = std::begin(vp);
