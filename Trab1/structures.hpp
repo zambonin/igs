@@ -262,58 +262,39 @@ class drawable {
             std::vector<coord> coords, oldCoords;
             std::vector<coord> vpCoords = {coord(10,10), coord(10,hei-10), coord(wid-10,hei-10), coord(wid-10,10)};
             oldCoords.assign(vp.begin(), vp.end());
-            // std::cout << "NEW CLIPPING!!!" << std::endl;
 
-            for (int j = 0; j < oldCoords.size(); j++) {
 
-                std::vector<coord> polygon_line = {coord(oldCoords[j].x, oldCoords[j].y),
+            for (int i = 0; i < vpCoords.size(); i++) {
+                std::vector<coord> window_line = {coord(vpCoords[i].x, vpCoords[i].y),
+                coord(vpCoords[(i+1)%vpCoords.size()].x,
+                        vpCoords[(i+1)%vpCoords.size()].y)};
+
+                coords.clear();
+                for (int j = 0; j < oldCoords.size(); j++) {
+                    std::vector<coord> polygon_line = {coord(oldCoords[j].x, oldCoords[j].y),
                     coord(oldCoords[(j+1)%oldCoords.size()].x,
                             oldCoords[(j+1)%oldCoords.size()].y)};
-                int count = 0;
-                // std::cout << "-------------------------------------------------" << std::endl;
-                for (int i = 0; i < vpCoords.size(); i++) {
-                    std::vector<coord> window_line = {coord(vpCoords[i].x, vpCoords[i].y),
-                    coord(vpCoords[(i+1)%vpCoords.size()].x,
-                            vpCoords[(i+1)%vpCoords.size()].y)};
 
-                    // for (auto& i: window_line) {
-                        // std::cout << "Wline: " << i << std::endl;
-                    // }
-
-                    // for (auto& i: polygon_line) {
-                        // std::cout << "Pline: " << i << std::endl;
-                    // }
                     bool sourceOut = ((window_line[1].x - window_line[0].x)*(polygon_line[0].y - window_line[0].y) > (window_line[1].y - window_line[0].y)*(polygon_line[0].x - window_line[0].x));
                     bool targetOut = ((window_line[1].x - window_line[0].x)*(polygon_line[1].y - window_line[0].y) > (window_line[1].y - window_line[0].y)*(polygon_line[1].x - window_line[0].x));
 
 
-                    if (sourceOut && !targetOut) {
-                        // std::cout << "Entered!" << std::endl;
+                    if (sourceOut != targetOut) {
                         coord out;
                         intersection(polygon_line, window_line, out);
-                        // std::cout << "Emplaced!! " << out << std::endl;
                         coords.push_back(out);
-                        coords.push_back(polygon_line[1]);
+                        if (sourceOut) {
+                            coords.push_back(polygon_line[1]);
+                        }
 
-                    }
-                    if (targetOut && !sourceOut) {
-                        // std::cout << "Entered1!" << std::endl;
-                        coord out;
-                        intersection(polygon_line, window_line, out);
-                        coords.push_back(polygon_line[0]);
-                        // std::cout << "Emplaced!! " << out << std::endl;
-                        coords.push_back(out);
-
-                    }
-                    if (!targetOut && !sourceOut) {
-                        count++;
+                    } else {
+                        if (!targetOut && !sourceOut) {
+                            coords.push_back(polygon_line[1]);
+                        }
                     }
 
                 }
-                if (count == vpCoords.size()) {
-                    coords.push_back(polygon_line[0]);
-                    coords.push_back(polygon_line[1]);
-                }
+                oldCoords.assign(coords.begin(), coords.end());
             }
             if (coords.size() == 0) {
                 return false;
