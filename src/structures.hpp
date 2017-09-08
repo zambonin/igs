@@ -91,10 +91,11 @@ public:
 
 class window {
 public:
-  window(double width = 1, double height = 1, double b = 1.0 / 20.0)
+  explicit window(double width = 1, double height = 1,
+                  double b = 1.0 / 20.0) noexcept
       : wid(width - b), hei(height - b), center(coord()) {}
 
-  double wid, hei, angle;
+  double wid, hei, angle{0};
   coord center;
 };
 
@@ -119,7 +120,7 @@ public:
   }
 
   void draw(cairo_t *cr, const std::list<coord> &points) {
-    auto it = std::begin(points), end = std::end(points);
+    auto it = std::begin(points), end = --std::end(points);
     cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
     cairo_move_to(cr, (*it).x, (*it).y);
     while (it++ != end) {
@@ -143,15 +144,16 @@ public:
     return std::accumulate(orig.begin(), orig.end(), coord()) / orig.size();
   }
 
-  void point_clipping(const window &w) {
+  std::list<coord> point_clipping(const window &w) {
     coord &c = *std::begin(scn);
     c.x = (c.x >= w.wid) ? w.wid : c.x;
     c.x = (c.x <= -w.wid) ? w.wid : c.x;
     c.y = (c.y >= w.hei) ? w.hei : c.y;
     c.y = (c.y <= -w.hei) ? -w.hei : c.y;
+    return scn;
   }
 
-  void liang_barsky(const window &w) {
+  std::list<coord> liang_barsky(const window &w) {
     coord &s = *std::begin(scn), &t = *(--std::end(scn));
     std::vector<double> lu1({s.x - t.x, t.x - s.x, s.y - t.y, t.y - s.y}),
         lu2({s.x + w.wid, w.wid - s.x, s.y + w.hei, w.hei - s.y}), r;
@@ -161,7 +163,7 @@ public:
       if (lu1[i] == 0 && lu2[i] < 0) {
         for (auto &i : scn)
           i = coord(w.wid, w.wid);
-        return;
+        return scn;
       }
       r.emplace_back(lu2[i] / lu1[i]);
       u1 = (lu1[i] < 0 && r[i] > u1) ? r[i] : u1;
@@ -171,7 +173,7 @@ public:
     if (u1 > u2) {
       for (auto &i : scn)
         i = coord(w.wid, w.wid);
-      return;
+      return scn;
     }
 
     if (u1 > 0) {
@@ -183,6 +185,8 @@ public:
       t.x = x1 + u2 * lu1[1];
       t.y = x2 + u2 * lu1[3];
     }
+
+    return scn;
   }
 
   inline int region_code(const window &w, const coord &c) {
@@ -191,60 +195,118 @@ public:
            1;
   }
 
-  inline void cs_inters(coord &t, coord &s, const window &w, int r) {
+  inline void cs_inters(coord &t, const coord &s, const window &w, int r) {
     double m = (t.y - s.y) / (t.x - s.x);
-    if (r & 4) {
+    if ((r & 4) != 0) {
       t.x = s.x + (-w.hei - s.y) / m;
       t.y = -w.hei;
     }
-    if (r & 8) {
+    if ((r & 8) != 0) {
       t.x = s.x + (w.hei - s.y) / m;
       t.y = w.hei;
     }
-    if (r & 1) {
+    if ((r & 1) != 0) {
       t.x = -w.wid;
       t.y = m * (-w.wid - s.x) + s.y;
     }
-    if (r & 2) {
+    if ((r & 2) != 0) {
       t.x = w.wid;
       t.y = m * (w.wid - s.x) + s.y;
     }
   }
 
-  void cohen_sutherland(const window &w) {
+  std::list<coord> cohen_sutherland(const window &w) {
     coord &s = *std::begin(scn), &t = *(--std::end(scn));
     int RC1 = region_code(w, s), RC2 = region_code(w, t);
 
     if ((RC1 + RC2) == 0) {
-      return;
+      return scn;
     }
 
-    if (RC1 & RC2) {
+    if ((RC1 & RC2) != 0) {
       for (auto &i : scn)
         i = coord(w.wid, w.wid);
-      return;
+      return scn;
     }
 
     cs_inters(s, t, w, RC1);
     cs_inters(t, s, w, RC2);
+
+    return scn;
   }
 
-  void clip(int l) {
+  coord line_inters(const coord &c1, const coord &c2, const coord &c3,
+                    const coord &c4) {
+    double delta_x1 = c1.x - c2.x, delta_y1 = c1.y - c2.y,
+           delta_x2 = c3.x - c4.x, delta_y2 = c3.y - c4.y,
+           m1 = delta_y1 / delta_x1, m2 = delta_y2 / delta_x2;
+
+    if ((delta_x1 == 0.0 && delta_x2 == 0.0) || (m1 == m2)) {
+      return coord();
+    }
+
+    if (delta_x1 == 0.0) {
+      return coord(c1.x, m2 * (c1.x - c3.x) + c3.y);
+    }
+
+    if (delta_x2 == 0.0) {
+      return coord(c3.x, m1 * (c3.x - c1.x) + c1.y);
+    }
+
+    double x = (-m1 * c1.x + m2 * c3.x + c1.y - c3.y) / (m2 - m1),
+           y = m2 * (x - c3.x) + c3.y;
+
+    return coord(x, y);
+  }
+
+  std::list<coord> weiler_atherton(const window &w) {
+    std::vector<coord> w_coord({coord(w.wid, w.hei), coord(w.wid, -w.hei),
+                                coord(-w.wid, -w.hei), coord(-w.wid, w.hei)}),
+        old_coords{std::begin(scn), std::end(scn)};
+    std::list<coord> coords;
+
+    for (unsigned int i = 0; i < w_coord.size(); ++i) {
+      coord c1 = w_coord[i], c2 = w_coord[(i + 1) % w_coord.size()];
+      coords.clear();
+      for (unsigned int j = 0; j < old_coords.size(); ++j) {
+        coord c3 = old_coords[j], c4 = old_coords[(j + 1) % old_coords.size()];
+        bool s_out =
+            ((c2.x - c1.x) * (c3.y - c1.y) > (c2.y - c1.y) * (c3.x - c1.x));
+        bool t_out =
+            ((c2.x - c1.x) * (c4.y - c1.y) > (c2.y - c1.y) * (c4.x - c1.x));
+        if (s_out != t_out) {
+          coords.emplace_back(line_inters(c3, c4, c1, c2));
+          if (s_out)
+            coords.push_back(c4);
+        } else if (!t_out && !s_out) {
+          coords.push_back(c4);
+        }
+      }
+      old_coords.assign(coords.begin(), coords.end());
+    }
+    if (coords.empty()) {
+      coords.push_back(coord(w.wid, w.wid));
+    }
+    return coords;
+  }
+
+  std::list<coord> clip(int l) {
     window ww;
     switch (type()) {
     case 1:
-      point_clipping(ww);
-      break;
+      return point_clipping(ww);
     case 2:
-      (l == -1) ? liang_barsky(ww) : cohen_sutherland(ww);
-      break;
+      return (l == -1) ? liang_barsky(ww) : cohen_sutherland(ww);
+    case 3:
+      return weiler_atherton(ww);
     }
+    return {};
   }
 
   const std::string name;
   std::list<coord> orig, scn;
   matrix<int> faces;
-  bool fill;
+  bool fill{false};
 };
 
 #endif // STRUCTURES_HPP

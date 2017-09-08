@@ -146,8 +146,7 @@ void update() {
     transform(m_transfer(-w.center) * m_rotate(-w.angle) *
                   m_scale(coord(1 / w.wid, 1 / w.hei)),
               obj.second.orig, obj.second.scn);
-    obj.second.clip(lclip);
-    obj.second.draw(cr, viewport(obj.second.scn));
+    obj.second.draw(cr, viewport(obj.second.clip(lclip)));
   }
 
   gtk_widget_queue_draw(
@@ -162,7 +161,6 @@ void pan(const coord &c) {
 
 void rotate(const double angle) {
   w.angle += (M_PI / 180) * angle;
-  transform(m_rotate(w.angle), w.center);
   update();
 }
 
