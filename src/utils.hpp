@@ -6,15 +6,15 @@
 #include <algorithm>
 #include <cmath>
 #include <fstream>
-#include <map>
 #include <sstream>
+#include <unordered_map>
 
 static cairo_surface_t *surface = nullptr;
 static GtkBuilder *builder;
 
-static std::map<std::string, drawable> objects;
+static std::unordered_map<std::string, drawable> objects;
 static window w;
-static int vp_height, vp_width;
+static int vp_height, vp_width, lclip;
 
 matrix<double> m_transfer(const coord &c) {
   return matrix<double>({{1, 0, 0}, {0, 1, 0}, {c.x, c.y, 1}});
@@ -137,11 +137,16 @@ void clear_surface() {
 void update() {
   clear_surface();
   cairo_t *cr = cairo_create(surface);
+  drawable("__window", {}).draw(cr, {coord(10, 10),
+        coord(vp_width - 10, 10),
+        coord(vp_width - 10, vp_height - 10),
+        coord(10, vp_height - 10)});
 
   for (auto &obj : objects) {
     transform(m_transfer(-w.center) * m_rotate(-w.angle) *
                   m_scale(coord(1 / w.wid, 1 / w.hei)),
               obj.second.orig, obj.second.scn);
+    obj.second.clip(lclip);
     obj.second.draw(cr, viewport(obj.second.scn));
   }
 
