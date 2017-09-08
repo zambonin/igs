@@ -34,11 +34,11 @@ int main(int argc, char *argv[]) {
                    G_CALLBACK(configure_event_cb), nullptr);
 
   gtk_widget_get_size_request(drawing_area, &vp_width, &vp_height);
-  w = window(vp_width, vp_height);
 
   gtk_builder_connect_signals(builder, nullptr);
   gtk_widget_show_all(
       GTK_WIDGET(gtk_builder_get_object(builder, "main_window")));
+  btn_center_clk();
   gtk_main();
 
   return 0;

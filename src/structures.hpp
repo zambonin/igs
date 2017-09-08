@@ -11,7 +11,7 @@
 
 class coord {
 public:
-  coord(double _x, double _y, double _z = 1) : x(_x), y(_y), z(_z) {}
+  coord(double _x = 0, double _y = 0, double _z = 1) : x(_x), y(_y), z(_z) {}
 
   coord(std::vector<double> c) : x(c[0]), y(c[1]), z(1) {}
 
@@ -91,8 +91,8 @@ public:
 
 class window {
 public:
-  explicit window(int width = 1, int height = 1)
-      : wid(width), hei(height), center(coord(0, 0)) {}
+  window(double width = 1, double height = 1, double b = 1.0 / 20.0)
+      : wid(width - b), hei(height - b), center(coord()) {}
 
   double wid, hei, angle;
   coord center;
@@ -100,8 +100,9 @@ public:
 
 class drawable {
 public:
-  explicit drawable(std::string _name, const std::list<coord> &_orig)
-      : name(std::move(_name)), orig(_orig), scn(_orig) {
+  explicit drawable(std::string _name, const std::list<coord> &_orig,
+                    bool f = false)
+      : name(std::move(_name)), orig(_orig), scn(_orig), fill(f) {
     faces = matrix<int>(1, orig.size());
     std::iota(faces[0].begin(), faces[0].end(), 1);
   }
@@ -118,17 +119,16 @@ public:
   }
 
   void draw(cairo_t *cr, const std::list<coord> &points) {
-    auto it = std::begin(points), end = --std::end(points);
-    while (it != end) {
-      cairo_move_to(cr, (*it).x, (*it).y);
-      ++it;
+    auto it = std::begin(points), end = std::end(points);
+    cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
+    cairo_move_to(cr, (*it).x, (*it).y);
+    while (it++ != end) {
       cairo_line_to(cr, (*it).x, (*it).y);
     }
-
-    cairo_set_line_width(cr, 2);
-    cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
-    cairo_move_to(cr, points.front().x, points.front().y);
-    cairo_line_to(cr, points.back().x, points.back().y);
+    cairo_close_path(cr);
+    if (fill) {
+      cairo_fill(cr);
+    }
     cairo_stroke(cr);
   }
 
@@ -140,13 +140,111 @@ public:
   }
 
   coord center() {
-    coord sum = std::accumulate(orig.begin(), orig.end(), coord(0, 0));
-    return sum / orig.size();
+    return std::accumulate(orig.begin(), orig.end(), coord()) / orig.size();
+  }
+
+  void point_clipping(const window &w) {
+    coord &c = *std::begin(scn);
+    c.x = (c.x >= w.wid) ? w.wid : c.x;
+    c.x = (c.x <= -w.wid) ? w.wid : c.x;
+    c.y = (c.y >= w.hei) ? w.hei : c.y;
+    c.y = (c.y <= -w.hei) ? -w.hei : c.y;
+  }
+
+  void liang_barsky(const window &w) {
+    coord &s = *std::begin(scn), &t = *(--std::end(scn));
+    std::vector<double> lu1({s.x - t.x, t.x - s.x, s.y - t.y, t.y - s.y}),
+        lu2({s.x + w.wid, w.wid - s.x, s.y + w.hei, w.hei - s.y}), r;
+    double u1 = 0.0, u2 = 1.0, x1 = s.x, x2 = s.y;
+
+    for (unsigned int i = 0; i < lu1.size(); ++i) {
+      if (lu1[i] == 0 && lu2[i] < 0) {
+        for (auto &i : scn)
+          i = coord(w.wid, w.wid);
+        return;
+      }
+      r.emplace_back(lu2[i] / lu1[i]);
+      u1 = (lu1[i] < 0 && r[i] > u1) ? r[i] : u1;
+      u2 = (lu1[i] > 0 && r[i] < u2) ? r[i] : u2;
+    }
+
+    if (u1 > u2) {
+      for (auto &i : scn)
+        i = coord(w.wid, w.wid);
+      return;
+    }
+
+    if (u1 > 0) {
+      s.x += u1 * lu1[1];
+      s.y += u1 * lu1[3];
+    }
+
+    if (u2 < 1) {
+      t.x = x1 + u2 * lu1[1];
+      t.y = x2 + u2 * lu1[3];
+    }
+  }
+
+  inline int region_code(const window &w, const coord &c) {
+    return ((1 << ((c.y > w.hei) * 4)) | (1 << ((c.y < -w.hei) * 3)) |
+            (1 << ((c.x > w.wid) * 2)) | (1 << ((c.x < -w.wid)) * 1)) >>
+           1;
+  }
+
+  inline void cs_inters(coord &t, coord &s, const window &w, int r) {
+    double m = (t.y - s.y) / (t.x - s.x);
+    if (r & 4) {
+      t.x = s.x + (-w.hei - s.y) / m;
+      t.y = -w.hei;
+    }
+    if (r & 8) {
+      t.x = s.x + (w.hei - s.y) / m;
+      t.y = w.hei;
+    }
+    if (r & 1) {
+      t.x = -w.wid;
+      t.y = m * (-w.wid - s.x) + s.y;
+    }
+    if (r & 2) {
+      t.x = w.wid;
+      t.y = m * (w.wid - s.x) + s.y;
+    }
+  }
+
+  void cohen_sutherland(const window &w) {
+    coord &s = *std::begin(scn), &t = *(--std::end(scn));
+    int RC1 = region_code(w, s), RC2 = region_code(w, t);
+
+    if ((RC1 + RC2) == 0) {
+      return;
+    }
+
+    if (RC1 & RC2) {
+      for (auto &i : scn)
+        i = coord(w.wid, w.wid);
+      return;
+    }
+
+    cs_inters(s, t, w, RC1);
+    cs_inters(t, s, w, RC2);
+  }
+
+  void clip(int l) {
+    window ww;
+    switch (type()) {
+    case 1:
+      point_clipping(ww);
+      break;
+    case 2:
+      (l == -1) ? liang_barsky(ww) : cohen_sutherland(ww);
+      break;
+    }
   }
 
   const std::string name;
   std::list<coord> orig, scn;
   matrix<int> faces;
+  bool fill;
 };
 
 #endif // STRUCTURES_HPP
