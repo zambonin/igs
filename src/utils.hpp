@@ -1,6 +1,7 @@
 #ifndef UTILS_HPP
 #define UTILS_HPP
 
+#include "bezier_curve.hpp"
 #include "structures.hpp"
 
 #include <algorithm>
@@ -146,7 +147,8 @@ void update() {
     transform(m_transfer(-w.center) * m_rotate(-w.angle) *
                   m_scale(coord(1 / w.wid, 1 / w.hei)),
               obj.second.orig, obj.second.scn);
-    obj.second.draw(cr, viewport(obj.second.clip(lclip)));
+    obj.second.clip(lclip);
+    obj.second.draw(cr, viewport(obj.second.scn));
   }
 
   gtk_widget_queue_draw(

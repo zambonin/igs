@@ -3,6 +3,27 @@
 
 #include "utils.hpp"
 
+extern "C" G_MODULE_EXPORT void btn_draw_curve(GtkWidget *widget,
+                                               GtkWidget *entry) {
+  GtkEntry *name = GTK_ENTRY(gtk_builder_get_object(builder, "name")),
+           *coor = GTK_ENTRY(gtk_builder_get_object(builder, "coord"));
+  GtkComboBoxText *combo =
+      GTK_COMBO_BOX_TEXT(gtk_builder_get_object(builder, "combo"));
+
+  std::string s(gtk_entry_get_text(name));
+  std::list<coord> c = read_coord(gtk_entry_get_text(coor));
+  gboolean fill = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(entry));
+
+  if (!s.empty() && !c.empty() && objects.count(s) == 0) {
+    gtk_combo_box_text_append(combo, nullptr, s.c_str());
+    objects.insert({s, bezier_curve(s, c, fill)});
+    update();
+  }
+
+  gtk_entry_set_text(name, "");
+  gtk_entry_set_text(coor, "");
+}
+
 extern "C" G_MODULE_EXPORT void btn_draw_figure_clk(GtkWidget *widget,
                                                     GtkWidget *entry) {
   GtkEntry *name = GTK_ENTRY(gtk_builder_get_object(builder, "name")),
