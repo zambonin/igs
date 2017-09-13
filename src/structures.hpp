@@ -108,24 +108,26 @@ public:
     std::iota(faces[0].begin(), faces[0].end(), 1);
 
     if (curve) {
-      int n = ((this->orig.size() - 4) / 3) + 1;
+      int n = ((this->orig.size() - 4) / 3);
 
       std::vector<coord> _orig;
       _orig.assign(std::begin(this->orig), std::end(this->orig));
       this->orig.clear();
 
-      for (int i = 0; i < n; i++) {
+      for (int i = 0; i < n + 1; i++) {
         for (double j = 0; j < 1; j += 0.001) {
           double j2 = j * j;
           double j3 = j * j * j;
 
           double x, y;
-          x = (-j3 + 3 * j2 - 3 * j + 1) * _orig[i * 3 + 0].x +
-              (3 * j3 - 6 * j2 + 3 * j) * _orig[i * 3 + 1].x +
-              (-3 * j3 + 3 * j2) * _orig[i * 3 + 2].x + (j3)*_orig[i * 3 + 3].x;
-          y = (-j3 + 3 * j2 - 3 * j + 1) * _orig[i * 3 + 0].y +
-              (3 * j3 - 6 * j2 + 3 * j) * _orig[i * 3 + 1].y +
-              (-3 * j3 + 3 * j2) * _orig[i * 3 + 2].y + (j3)*_orig[i * 3 + 3].y;
+          x = (-j3 + (3 * j2) + (-3 * j) + 1) * _orig[i * 3 + 0].x +
+              ((3 * j3) + (-6 * j2) + (3 * j)) * _orig[i * 3 + 1].x +
+              ((-3 * j3) + (3 * j2)) * _orig[i * 3 + 2].x +
+              (j3)*_orig[i * 3 + 3].x;
+          y = (-j3 + (3 * j2) + (-3 * j) + 1) * _orig[i * 3 + 0].y +
+              ((3 * j3) + (-6 * j2) + (3 * j)) * _orig[i * 3 + 1].y +
+              ((-3 * j3) + (3 * j2)) * _orig[i * 3 + 2].y +
+              (j3)*_orig[i * 3 + 3].y;
 
           this->orig.emplace_back(coord(x, y));
         }
@@ -163,6 +165,9 @@ public:
 
   gint16 type() {
     if (orig.size() > 2) {
+      if (this->curve) {
+        return 4;
+      }
       return 3;
     }
     return orig.size();
@@ -181,6 +186,46 @@ public:
     return scn;
   }
 
+  std::list<coord> curve_clipping(const window &w) {
+    auto it = std::begin(scn), end = --std::end(scn);
+    std::list<coord> nSegment;
+    std::list<coord> coords;
+
+    drawable line("segment",
+                  {coord((*it).x, (*it).y), coord((*it++).x, (*it++).y)});
+    nSegment = line.liang_barsky(w);
+    if (nSegment.size() != 0) {
+      coords.emplace_back(*std::begin(nSegment));
+    }
+    // coords.emplace_back(*(--std::end(nSegment)));
+    // drawable *line;
+    //
+    std::cout << "Start Segment: " << (*std::begin(nSegment)).x
+              << (*std::begin(nSegment)).y << std::endl;
+    std::cout << "End Segment: " << (*(--std::end(nSegment))).x
+              << (*(--std::end(nSegment))).y << std::endl;
+    std::cout << "Line Start: " << (*std::begin(line.scn)).x
+              << (*std::begin(line.scn)).y << std::endl;
+    std::cout << "Line End: " << (*(--std::end(line.scn))).x
+              << (*(--std::end(line.scn))).y << std::endl;
+    while (it != end) {
+      nSegment.clear();
+      auto actualIt = it;
+      it++;
+      drawable line1("segment", {coord((*actualIt).x, (*actualIt).y),
+                                 coord((*it).x, (*it).y)});
+      nSegment = line1.liang_barsky(w);
+      // coords.push_back(*std::begin(nSegment));
+      //
+      if (nSegment.size() != 0) {
+        coords.emplace_back(*(--std::end(nSegment)));
+      }
+    }
+    std::cout << (*std::begin(coords)).x << (*std::begin(coords)).y
+              << std::endl;
+    return coords;
+  }
+
   std::list<coord> liang_barsky(const window &w) {
     coord &s = *std::begin(scn), &t = *(--std::end(scn));
     std::vector<double> lu1({s.x - t.x, t.x - s.x, s.y - t.y, t.y - s.y}),
@@ -189,8 +234,9 @@ public:
 
     for (unsigned int i = 0; i < lu1.size(); ++i) {
       if (lu1[i] == 0 && lu2[i] < 0) {
-        for (auto &i : scn)
-          i = coord(w.wid, w.wid);
+        // for (auto &i : scn)
+        // i = coord(w.wid, w.wid);
+        scn.clear();
         return scn;
       }
       r.emplace_back(lu2[i] / lu1[i]);
@@ -199,8 +245,9 @@ public:
     }
 
     if (u1 > u2) {
-      for (auto &i : scn)
-        i = coord(w.wid, w.wid);
+      // for (auto &i : scn)
+      // i = coord(w.wid, w.wid);
+      scn.clear();
       return scn;
     }
 
@@ -327,6 +374,8 @@ public:
       return (l == -1) ? liang_barsky(ww) : cohen_sutherland(ww);
     case 3:
       return weiler_atherton(ww);
+    case 4:
+      return curve_clipping(ww);
     }
     return {};
   }

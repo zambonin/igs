@@ -146,7 +146,9 @@ void update() {
     transform(m_transfer(-w.center) * m_rotate(-w.angle) *
                   m_scale(coord(1 / w.wid, 1 / w.hei)),
               obj.second.orig, obj.second.scn);
-    obj.second.draw(cr, viewport(obj.second.clip(lclip)));
+    if ((obj.second.clip(lclip)).size() != 0) {
+      obj.second.draw(cr, viewport(obj.second.clip(lclip)));
+    }
   }
 
   gtk_widget_queue_draw(
