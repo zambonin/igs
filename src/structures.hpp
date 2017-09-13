@@ -236,8 +236,8 @@ public:
       if (lu1[i] == 0 && lu2[i] < 0) {
         // for (auto &i : scn)
         // i = coord(w.wid, w.wid);
-        scn.clear();
-        return scn;
+        std::list<coord> emp;
+        return emp;
       }
       r.emplace_back(lu2[i] / lu1[i]);
       u1 = (lu1[i] < 0 && r[i] > u1) ? r[i] : u1;
@@ -247,21 +247,25 @@ public:
     if (u1 > u2) {
       // for (auto &i : scn)
       // i = coord(w.wid, w.wid);
-      scn.clear();
-      return scn;
+      //
+      std::list<coord> emp;
+      return emp;
     }
 
+    std::list<coord> coords;
+    coords.assign(std::begin(scn), std::end(scn));
+    auto source = std::begin(scn), target = --std::end(scn);
     if (u1 > 0) {
-      s.x += u1 * lu1[1];
-      s.y += u1 * lu1[3];
+      (*source).x += u1 * lu1[1];
+      (*source).y += u1 * lu1[3];
     }
 
     if (u2 < 1) {
-      t.x = x1 + u2 * lu1[1];
-      t.y = x2 + u2 * lu1[3];
+      (*target).x = x1 + u2 * lu1[1];
+      (*target).y = x2 + u2 * lu1[3];
     }
 
-    return scn;
+    return coords;
   }
 
   inline int region_code(const window &w, const coord &c) {
@@ -299,15 +303,22 @@ public:
     }
 
     if ((RC1 & RC2) != 0) {
-      for (auto &i : scn)
-        i = coord(w.wid, w.wid);
-      return scn;
+      // for (auto &i : scn)
+      // i = coord(w.wid, w.wid);
+      std::list<coord> emp;
+      return emp;
     }
+
+    std::list<coord> coords;
+    std::list<coord> aux;
+    coords.assign(std::begin(scn), std::end(scn));
 
     cs_inters(s, t, w, RC1);
     cs_inters(t, s, w, RC2);
 
-    return scn;
+    aux = scn;
+    scn = coords;
+    return aux;
   }
 
   coord line_inters(const coord &c1, const coord &c2, const coord &c3,
