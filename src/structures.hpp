@@ -228,14 +228,13 @@ public:
 
   std::list<coord> liang_barsky(const window &w) {
     coord &s = *std::begin(scn), &t = *(--std::end(scn));
-    std::vector<double> lu1({s.x - t.x, t.x - s.x, s.y - t.y, t.y - s.y}),
+    std::vector<double> lu1(
+        {-1 * (t.x - s.x), t.x - s.x, -1 * (t.y - s.y), t.y - s.y}),
         lu2({s.x + w.wid, w.wid - s.x, s.y + w.hei, w.hei - s.y}), r;
     double u1 = 0.0, u2 = 1.0, x1 = s.x, x2 = s.y;
 
     for (unsigned int i = 0; i < lu1.size(); ++i) {
       if (lu1[i] == 0 && lu2[i] < 0) {
-        // for (auto &i : scn)
-        // i = coord(w.wid, w.wid);
         std::list<coord> emp;
         return emp;
       }
@@ -245,26 +244,23 @@ public:
     }
 
     if (u1 > u2) {
-      // for (auto &i : scn)
-      // i = coord(w.wid, w.wid);
-      //
       std::list<coord> emp;
       return emp;
     }
 
     std::list<coord> coords;
     coords.assign(std::begin(scn), std::end(scn));
-    auto source = std::begin(scn), target = --std::end(scn);
-    if (u1 > 0) {
-      (*source).x += u1 * lu1[1];
-      (*source).y += u1 * lu1[3];
-    }
+    auto source = std::begin(coords), target = --std::end(coords);
 
     if (u2 < 1) {
       (*target).x = x1 + u2 * lu1[1];
       (*target).y = x2 + u2 * lu1[3];
     }
 
+    if (u1 > 0) {
+      (*source).x = x1 + u1 * lu1[1];
+      (*source).y = x2 + u1 * lu1[3];
+    }
     return coords;
   }
 
@@ -279,16 +275,29 @@ public:
     if ((r & 4) != 0) {
       t.x = s.x + (-w.hei - s.y) / m;
       t.y = -w.hei;
-    }
-    if ((r & 8) != 0) {
+      if (t.x > w.wid || t.y < -w.wid) {
+        t.x = w.wid;
+        t.y = m * (w.wid - s.x) + s.y;
+      }
+      if (t.x < -w.wid || t.y < -w.wid) {
+        t.x = -w.wid;
+        t.y = m * (-w.wid - s.x) + s.y;
+      }
+    } else if ((r & 8) != 0) {
       t.x = s.x + (w.hei - s.y) / m;
       t.y = w.hei;
-    }
-    if ((r & 1) != 0) {
+      if (t.x > w.wid || t.y > w.wid) {
+        t.x = w.wid;
+        t.y = m * (w.wid - s.x) + s.y;
+      }
+      if (t.x < -w.wid || t.y > w.wid) {
+        t.x = -w.wid;
+        t.y = m * (-w.wid - s.x) + s.y;
+      }
+    } else if ((r & 1) != 0) {
       t.x = -w.wid;
       t.y = m * (-w.wid - s.x) + s.y;
-    }
-    if ((r & 2) != 0) {
+    } else if ((r & 2) != 0) {
       t.x = w.wid;
       t.y = m * (w.wid - s.x) + s.y;
     }
@@ -298,7 +307,7 @@ public:
     coord &s = *std::begin(scn), &t = *(--std::end(scn));
     int RC1 = region_code(w, s), RC2 = region_code(w, t);
 
-    if ((RC1 + RC2) == 0) {
+    if ((RC1 == RC2) && RC1 == 0) {
       return scn;
     }
 
@@ -313,14 +322,41 @@ public:
     std::list<coord> aux;
     coords.assign(std::begin(scn), std::end(scn));
 
-    cs_inters(s, t, w, RC1);
-    cs_inters(t, s, w, RC2);
+    if (RC1 != RC2) {
+      if (!(RC1 & RC2)) {
+        if (RC1 != 0) {
+          cs_inters(s, t, w, RC1);
+        }
+        if (RC2 != 0) {
+          cs_inters(t, s, w, RC2);
+        }
 
-    aux = scn;
-    scn = coords;
-    return aux;
+        // double centerX = (s.x + t.x) / 2;
+        // double centerY = (s.y + t.y) / 2;
+        // if (((region_code(w, coord(centerX, centerY)) & 8) != 0
+        // && (region_code(w, coord(centerX, centerY)) & 2) != 0) ||
+        // ((region_code(w, coord(centerX, centerY)) & 8) != 0
+        // && (region_code(w, coord(centerX, centerY)) & 1) != 0) ||
+        // ((region_code(w, coord(centerX, centerY)) & 4) != 0
+        // && (region_code(w, coord(centerX, centerY)) & 2) != 0) ||
+        // ((region_code(w, coord(centerX, centerY)) & 4) != 0
+        // && (region_code(w, coord(centerX, centerY)) & 1) != 0)) {
+        // std::list<coord> emp;
+        // return emp;
+        // }
+        if ((s.x > w.wid || s.x < -w.wid || s.y > w.wid || s.y < -w.wid) ||
+            (t.x > w.wid || t.x < -w.wid || t.y > w.wid || t.y < -w.wid)) {
+          std::list<coord> emp;
+          return emp;
+        }
+        aux = scn;
+        scn = coords;
+        return aux;
+      }
+    }
+    std::list<coord> emp;
+    return emp;
   }
-
   coord line_inters(const coord &c1, const coord &c2, const coord &c3,
                     const coord &c4) {
     double delta_x1 = c1.x - c2.x, delta_y1 = c1.y - c2.y,
@@ -382,7 +418,7 @@ public:
     case 1:
       return point_clipping(ww);
     case 2:
-      return (l == -1) ? liang_barsky(ww) : cohen_sutherland(ww);
+      return (l == 1) ? liang_barsky(ww) : cohen_sutherland(ww);
     case 3:
       return weiler_atherton(ww);
     case 4:
