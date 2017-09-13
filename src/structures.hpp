@@ -197,17 +197,6 @@ public:
     if (nSegment.size() != 0) {
       coords.emplace_back(*std::begin(nSegment));
     }
-    // coords.emplace_back(*(--std::end(nSegment)));
-    // drawable *line;
-    //
-    std::cout << "Start Segment: " << (*std::begin(nSegment)).x
-              << (*std::begin(nSegment)).y << std::endl;
-    std::cout << "End Segment: " << (*(--std::end(nSegment))).x
-              << (*(--std::end(nSegment))).y << std::endl;
-    std::cout << "Line Start: " << (*std::begin(line.scn)).x
-              << (*std::begin(line.scn)).y << std::endl;
-    std::cout << "Line End: " << (*(--std::end(line.scn))).x
-              << (*(--std::end(line.scn))).y << std::endl;
     while (it != end) {
       nSegment.clear();
       auto actualIt = it;
@@ -215,8 +204,6 @@ public:
       drawable line1("segment", {coord((*actualIt).x, (*actualIt).y),
                                  coord((*it).x, (*it).y)});
       nSegment = line1.liang_barsky(w);
-      // coords.push_back(*std::begin(nSegment));
-      //
       if (nSegment.size() != 0) {
         coords.emplace_back(*(--std::end(nSegment)));
       }
@@ -312,8 +299,6 @@ public:
     }
 
     if ((RC1 & RC2) != 0) {
-      // for (auto &i : scn)
-      // i = coord(w.wid, w.wid);
       std::list<coord> emp;
       return emp;
     }
@@ -331,19 +316,6 @@ public:
           cs_inters(t, s, w, RC2);
         }
 
-        // double centerX = (s.x + t.x) / 2;
-        // double centerY = (s.y + t.y) / 2;
-        // if (((region_code(w, coord(centerX, centerY)) & 8) != 0
-        // && (region_code(w, coord(centerX, centerY)) & 2) != 0) ||
-        // ((region_code(w, coord(centerX, centerY)) & 8) != 0
-        // && (region_code(w, coord(centerX, centerY)) & 1) != 0) ||
-        // ((region_code(w, coord(centerX, centerY)) & 4) != 0
-        // && (region_code(w, coord(centerX, centerY)) & 2) != 0) ||
-        // ((region_code(w, coord(centerX, centerY)) & 4) != 0
-        // && (region_code(w, coord(centerX, centerY)) & 1) != 0)) {
-        // std::list<coord> emp;
-        // return emp;
-        // }
         if ((s.x > w.wid || s.x < -w.wid || s.y > w.wid || s.y < -w.wid) ||
             (t.x > w.wid || t.x < -w.wid || t.y > w.wid || t.y < -w.wid)) {
           std::list<coord> emp;
