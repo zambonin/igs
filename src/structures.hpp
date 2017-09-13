@@ -102,10 +102,36 @@ public:
 class drawable {
 public:
   explicit drawable(std::string _name, const std::list<coord> &_orig,
-                    bool f = false)
-      : name(std::move(_name)), orig(_orig), scn(_orig), fill(f) {
+                    bool f = false, bool c = false)
+      : name(std::move(_name)), orig(_orig), scn(_orig), fill(f), curve(c) {
     faces = matrix<int>(1, orig.size());
     std::iota(faces[0].begin(), faces[0].end(), 1);
+
+    if (curve) {
+      int n = ((this->orig.size() - 4) / 3) + 1;
+
+      std::vector<coord> _orig;
+      _orig.assign(std::begin(this->orig), std::end(this->orig));
+      this->orig.clear();
+
+      for (int i = 0; i < n; i++) {
+        for (double j = 0; j < 1; j += 0.001) {
+          double j2 = j * j;
+          double j3 = j * j * j;
+
+          double x, y;
+          x = (-j3 + 3 * j2 - 3 * j + 1) * _orig[i * 3 + 0].x +
+              (3 * j3 - 6 * j2 + 3 * j) * _orig[i * 3 + 1].x +
+              (-3 * j3 + 3 * j2) * _orig[i * 3 + 2].x + (j3)*_orig[i * 3 + 3].x;
+          y = (-j3 + 3 * j2 - 3 * j + 1) * _orig[i * 3 + 0].y +
+              (3 * j3 - 6 * j2 + 3 * j) * _orig[i * 3 + 1].y +
+              (-3 * j3 + 3 * j2) * _orig[i * 3 + 2].y + (j3)*_orig[i * 3 + 3].y;
+
+          this->orig.emplace_back(coord(x, y));
+        }
+      }
+      this->scn = orig;
+    }
   }
 
   explicit drawable(std::string _name, const std::list<coord> &_orig,
@@ -126,7 +152,9 @@ public:
     while (it++ != end) {
       cairo_line_to(cr, (*it).x, (*it).y);
     }
-    cairo_close_path(cr);
+    if (!curve) {
+      cairo_close_path(cr);
+    }
     if (fill) {
       cairo_fill(cr);
     }
@@ -307,6 +335,7 @@ public:
   std::list<coord> orig, scn;
   matrix<int> faces;
   bool fill{false};
+  bool curve;
 };
 
 #endif // STRUCTURES_HPP
