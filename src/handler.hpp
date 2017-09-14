@@ -9,17 +9,22 @@ extern "C" G_MODULE_EXPORT void btn_draw_figure_clk(GtkWidget *widget,
            *coor = GTK_ENTRY(gtk_builder_get_object(builder, "coord"));
   GtkComboBoxText *combo =
       GTK_COMBO_BOX_TEXT(gtk_builder_get_object(builder, "combo"));
+
   GtkToggleButton *cbtn =
       GTK_TOGGLE_BUTTON(gtk_builder_get_object(builder, "curve"));
+
+  GtkToggleButton *sbtn =
+      GTK_TOGGLE_BUTTON(gtk_builder_get_object(builder, "spline"));
 
   std::string s(gtk_entry_get_text(name));
   std::list<coord> c = read_coord(gtk_entry_get_text(coor));
   gboolean fill = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(entry));
   gboolean curve = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(cbtn));
+  gboolean spline = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(sbtn));
 
   if (!s.empty() && !c.empty() && objects.count(s) == 0) {
     gtk_combo_box_text_append(combo, nullptr, s.c_str());
-    objects.insert({s, drawable(s, c, fill, curve)});
+    objects.insert({s, drawable(s, c, fill, curve, spline)});
     update();
   }
 

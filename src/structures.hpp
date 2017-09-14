@@ -102,11 +102,11 @@ public:
 class drawable {
 public:
   explicit drawable(std::string _name, const std::list<coord> &_orig,
-                    bool f = false, bool c = false)
-      : name(std::move(_name)), orig(_orig), scn(_orig), fill(f), curve(c) {
+                    bool f = false, bool c = false, bool s = false)
+      : name(std::move(_name)), orig(_orig), scn(_orig), fill(f), curve(c),
+        spline(s) {
     faces = matrix<int>(1, orig.size());
     std::iota(faces[0].begin(), faces[0].end(), 1);
-
     if (curve) {
       int n = ((this->orig.size() - 4) / 3);
 
@@ -114,7 +114,7 @@ public:
       _orig.assign(std::begin(this->orig), std::end(this->orig));
       this->orig.clear();
 
-      for (int i = 0; i < n + 1; i++) {
+      for (int i = 0; i < n + 1; ++i) {
         for (double j = 0; j < 1; j += 0.001) {
           double j2 = j * j;
           double j3 = j * j * j;
@@ -133,6 +133,49 @@ public:
         }
       }
       this->scn = orig;
+    } else if (spline) {
+      std::vector<coord> coords;
+      coords.assign(std::begin(orig), std::end(orig));
+      orig.clear();
+
+      double t = 0.001;
+      double t2 = t * t;
+      double t3 = t2 * t;
+
+      for (int i = 0; i < (int)(coords.size() - 3); ++i) {
+        coord coef1 = coords[i];
+        coord coef2 = coords[i + 1];
+        coord coef3 = coords[i + 2];
+        coord coef4 = coords[i + 3];
+
+        double a = -(1.0 / 6.0) * coef1.x + 0.5 * coef2.x - 0.5 * coef3.x +
+                   (1.0 / 6.0) * coef4.x;
+        double b = 0.5 * coef1.x - coef2.x + 0.5 * coef3.x;
+        double c = -0.5 * coef1.x + 0.5 * coef3.x;
+        double d = (1.0 / 6.0) * coef1.x + (2.0 / 3.0) * coef2.x +
+                   (1.0 / 6.0) * coef3.x;
+        double x = d;
+
+        double deltaX = a * t3 + b * t2 + c * t;
+        double deltaX2 = (6 * a * t3) + (2 * b * t2);
+        double deltaX3 = (6 * a * t3);
+
+        a = -(1.0 / 6.0) * coef1.y + 0.5 * coef2.y - 0.5 * coef3.y +
+            (1.0 / 6.0) * coef4.y;
+        b = 0.5 * coef1.y - coef2.y + 0.5 * coef3.y;
+        c = -0.5 * coef1.y + 0.5 * coef3.y;
+        d = (1.0 / 6.0) * coef1.y + (2.0 / 3.0) * coef2.y +
+            (1.0 / 6.0) * coef3.y;
+        double y = d;
+
+        double deltaY = a * t3 + b * t2 + c * t;
+        double deltaY2 = (6 * a * t3) + (2 * b * t2);
+        double deltaY3 = (6 * a * t3);
+
+        orig.emplace_back(coord(x, y));
+        fowardDiff(x, deltaX, deltaX2, deltaX3, y, deltaY, deltaY2, deltaY3);
+      }
+      scn = orig;
     }
   }
 
@@ -147,6 +190,25 @@ public:
     return os << d.faces;
   }
 
+  void fowardDiff(double _x, double deltaX, double deltaX2, double deltaX3,
+                  double _y, double deltaY, double deltaY2, double deltaY3) {
+    for (float t = 0.0; t < 1.0; t += 0.001) {
+      double x = _x, y = _y;
+
+      x += deltaX;
+      deltaX += deltaX2;
+      deltaX2 += deltaX3;
+
+      y += deltaY;
+      deltaY += deltaY2;
+      deltaY2 += deltaY3;
+
+      orig.emplace_back(coord(x, y));
+      _x = x;
+      _y = y;
+    }
+  }
+
   void draw(cairo_t *cr, const std::list<coord> &points) {
     auto it = std::begin(points), end = --std::end(points);
     cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
@@ -154,7 +216,7 @@ public:
     while (it++ != end) {
       cairo_line_to(cr, (*it).x, (*it).y);
     }
-    if (!curve) {
+    if (!curve && !spline) {
       cairo_close_path(cr);
     }
     if (fill) {
@@ -167,6 +229,9 @@ public:
     if (orig.size() > 2) {
       if (this->curve) {
         return 4;
+      }
+      if (this->spline) {
+        return 5;
       }
       return 3;
     }
@@ -208,8 +273,6 @@ public:
         coords.emplace_back(*(--std::end(nSegment)));
       }
     }
-    std::cout << (*std::begin(coords)).x << (*std::begin(coords)).y
-              << std::endl;
     return coords;
   }
 
@@ -395,6 +458,8 @@ public:
       return weiler_atherton(ww);
     case 4:
       return curve_clipping(ww);
+    case 5:
+      return curve_clipping(ww);
     }
     return {};
   }
@@ -404,6 +469,7 @@ public:
   matrix<int> faces;
   bool fill{false};
   bool curve;
+  bool spline;
 };
 
 #endif // STRUCTURES_HPP
