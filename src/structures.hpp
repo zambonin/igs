@@ -119,16 +119,15 @@ public:
           double j2 = j * j;
           double j3 = j * j * j;
 
-          double x, y;
-          x = (-j3 + (3 * j2) + (-3 * j) + 1) * _orig[i * 3 + 0].x +
-              ((3 * j3) + (-6 * j2) + (3 * j)) * _orig[i * 3 + 1].x +
-              ((-3 * j3) + (3 * j2)) * _orig[i * 3 + 2].x +
-              (j3)*_orig[i * 3 + 3].x;
-          y = (-j3 + (3 * j2) + (-3 * j) + 1) * _orig[i * 3 + 0].y +
-              ((3 * j3) + (-6 * j2) + (3 * j)) * _orig[i * 3 + 1].y +
-              ((-3 * j3) + (3 * j2)) * _orig[i * 3 + 2].y +
-              (j3)*_orig[i * 3 + 3].y;
+          double x = _orig[i * 3 + 0].x * (-j3 + (3 * j2) + (-3 * j) + 1) +
+                     _orig[i * 3 + 1].x * ((3 * j3) + (-6 * j2) + (3 * j)) +
+                     _orig[i * 3 + 2].x * ((-3 * j3) + (3 * j2)) +
+                     _orig[i * 3 + 3].x * (j3);
 
+          double y = _orig[i * 3 + 0].y * (-j3 + (3 * j2) + (-3 * j) + 1) +
+                     _orig[i * 3 + 1].y * ((3 * j3) + (-6 * j2) + (3 * j)) +
+                     _orig[i * 3 + 2].y * ((-3 * j3) + (3 * j2)) +
+                     _orig[i * 3 + 3].y * (j3);
           this->orig.emplace_back(coord(x, y));
         }
       }
