@@ -257,7 +257,7 @@
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkGrid">
+                          <object class="GtkGrid" id="grid10">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <property name="row_spacing">5</property>
@@ -348,12 +348,12 @@
                 <property name="label_xalign">0</property>
                 <property name="shadow_type">none</property>
                 <child>
-                  <object class="GtkAlignment">
+                  <object class="GtkAlignment" id="align5">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="left_padding">12</property>
                     <child>
-                      <object class="GtkGrid">
+                      <object class="GtkGrid" id="grid9">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="halign">center</property>
@@ -403,7 +403,7 @@
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkLabel">
+                          <object class="GtkLabel" id="label8">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <property name="label" translatable="yes">Angle</property>
@@ -414,7 +414,7 @@
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkLabel">
+                          <object class="GtkLabel" id="label9">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <property name="label" translatable="yes">Vector</property>
@@ -425,7 +425,7 @@
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkLabel">
+                          <object class="GtkLabel" id="labell">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <property name="label" translatable="yes">Operation</property>
@@ -465,7 +465,7 @@
                   </object>
                 </child>
                 <child type="label">
-                  <object class="GtkLabel">
+                  <object class="GtkLabel" id="label11">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="label" translatable="yes">Object movement</property>
@@ -563,7 +563,7 @@
           </packing>
         </child>
         <child>
-          <object class="GtkBox">
+          <object class="GtkBox" id="viewBox">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="orientation">vertical</property>
@@ -586,7 +586,7 @@
                   </object>
                 </child>
                 <child type="label">
-                  <object class="GtkLabel">
+                  <object class="GtkLabel" id="viewportLabel">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="label" translatable="yes">Viewport</property>
@@ -600,7 +600,7 @@
               </packing>
             </child>
             <child>
-              <object class="GtkGrid">
+              <object class="GtkGrid" id="factors grid">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="margin_left">10</property>
@@ -699,18 +699,18 @@
                 <property name="margin_top">5</property>
                 <property name="column_spacing">10</property>
                 <child>
-                  <object class="GtkFrame">
+                  <object class="GtkFrame" id="radioFrame">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="label_xalign">0</property>
                     <property name="shadow_type">none</property>
                     <child>
-                      <object class="GtkAlignment">
+                      <object class="GtkAlignment" id="radioAlign">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="left_padding">12</property>
                         <child>
-                          <object class="GtkGrid">
+                          <object class="GtkGrid" id="radioGrid">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <child>
@@ -749,7 +749,7 @@
                       </object>
                     </child>
                     <child type="label">
-                      <object class="GtkLabel">
+                      <object class="GtkLabel" id="radioLabel">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="label" translatable="yes">Line clipping algorithms</property>
@@ -762,7 +762,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkBox">
+                  <object class="GtkBox" id="checkBoxes">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="orientation">vertical</property>
