@@ -14,16 +14,37 @@ extern "C" G_MODULE_EXPORT void btn_draw_figure_clk(GtkWidget *widget,
       GTK_TOGGLE_BUTTON(gtk_builder_get_object(builder, "curve_obj_check"));
   GtkToggleButton *sbtn =
       GTK_TOGGLE_BUTTON(gtk_builder_get_object(builder, "spline_obj_radiobtn"));
+  GtkToggleButton *lbtn =
+      GTK_TOGGLE_BUTTON(gtk_builder_get_object(builder, "lbclip_obj_radiobtn"));
+  GtkRange *steps =
+      GTK_RANGE(gtk_builder_get_object(builder, "curve_step_scale"));
 
   std::string s(gtk_entry_get_text(name));
   std::list<coord> c = read_coord(gtk_entry_get_text(coor));
-  gboolean fill = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(entry));
-  gboolean curve = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(cbtn));
-  gboolean spline = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(sbtn));
+  bool curve = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(cbtn));
+  bool spline = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(sbtn));
+  bool fill = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(entry));
+  bool clip = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(lbtn));
+  double step = gtk_range_get_value(steps);
 
   if (!s.empty() && !c.empty() && objects.count(s) == 0) {
     gtk_combo_box_text_append(combo, nullptr, s.c_str());
-    objects.insert({s, drawable(s, c, fill, curve, spline)});
+    if (curve && spline) {
+      objects.insert(std::make_pair(
+          s, std::unique_ptr<bspline>(new bspline(s, c, clip, step))));
+    } else if (curve && !spline) {
+      objects.insert(std::make_pair(
+          s, std::unique_ptr<bezier>(new bezier(s, c, clip, step))));
+    } else if (c.size() >= 3) {
+      objects.insert(
+          std::make_pair(s, std::unique_ptr<polygon>(new polygon(s, c, fill))));
+    } else if (c.size() == 2) {
+      objects.insert(
+          std::make_pair(s, std::unique_ptr<line>(new line(s, c, clip))));
+    } else {
+      objects.insert(
+          std::make_pair(s, std::unique_ptr<point>(new point(s, c))));
+    }
     update();
   }
 
@@ -111,7 +132,7 @@ extern "C" G_MODULE_EXPORT void btn_trans_figure_clk(GtkWidget *widget,
   const double angle = M_PI * gtk_range_get_value(GTK_RANGE(entry)) / 180;
   coord vector(gtk_range_get_value(xcoor), gtk_range_get_value(ycoor));
 
-  drawable &d = objects.find(obj)->second;
+  drawable &d = *(objects.find(obj)->second.get());
   std::unordered_map<int, matrix<double>> bases = {
       {0, m_transfer(vector)},
       {1, m_transfer(-d.center()) * m_scale(vector) * m_transfer(d.center())},
@@ -127,10 +148,12 @@ extern "C" G_MODULE_EXPORT void btn_trans_figure_clk(GtkWidget *widget,
 extern "C" G_MODULE_EXPORT void btn_delete_figure_clk(GtkWidget *widget,
                                                       GtkWidget *combo) {
   gchar *obj = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo));
-  gtk_combo_box_text_remove(GTK_COMBO_BOX_TEXT(combo),
-                            gtk_combo_box_get_active(GTK_COMBO_BOX(combo)));
-  objects.erase(obj);
-  update();
+  if (obj != nullptr) {
+    gtk_combo_box_text_remove(GTK_COMBO_BOX_TEXT(combo),
+                              gtk_combo_box_get_active(GTK_COMBO_BOX(combo)));
+    objects.erase(obj);
+    update();
+  }
 }
 
 extern "C" G_MODULE_EXPORT void btn_add_obj_figure(GtkWidget *widget,
@@ -139,11 +162,12 @@ extern "C" G_MODULE_EXPORT void btn_add_obj_figure(GtkWidget *widget,
   if (objects.count(file) == 0) {
     GtkToggleButton *fill_btn =
         GTK_TOGGLE_BUTTON(gtk_builder_get_object(builder, "fill_obj_check"));
-    drawable d = read_obj(file);
-    d.fill = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(fill_btn));
+    polygon p = read_obj(file);
+    p.fill = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(fill_btn));
     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), nullptr,
-                              d.name.c_str());
-    objects.insert({d.name, d});
+                              p.name.c_str());
+    objects.insert(
+        std::make_pair(p.name, std::unique_ptr<polygon>(new polygon(p))));
     update();
   }
 }
@@ -152,8 +176,7 @@ extern "C" G_MODULE_EXPORT void btn_save_obj(GtkWidget *widget,
                                              GtkWidget *combo) {
   gchar *obj = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo));
   if (obj != nullptr) {
-    std::string p(obj);
-    write_obj(p, objects.find(p)->second);
+    write_obj(*(objects.find(obj)->second.get()));
   }
 }
 

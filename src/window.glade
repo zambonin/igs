@@ -7,8 +7,15 @@
     <property name="step_increment">1</property>
     <property name="page_increment">10</property>
   </object>
+  <object class="GtkAdjustment" id="curve_step_adjust">
+    <property name="upper">5000</property>
+    <property name="value">1000</property>
+    <property name="step_increment">10</property>
+    <property name="page_increment">100</property>
+  </object>
   <object class="GtkAdjustment" id="pan_param_adjust">
     <property name="upper">200</property>
+    <property name="value">5</property>
     <property name="step_increment">1</property>
     <property name="page_increment">10</property>
   </object>
@@ -29,6 +36,7 @@
   </object>
   <object class="GtkAdjustment" id="zoom_param_adjust">
     <property name="upper">1</property>
+    <property name="value">0.099999999776482579</property>
     <property name="step_increment">0.10000000000000001</property>
     <property name="page_increment">10</property>
   </object>
@@ -47,6 +55,7 @@
             <property name="halign">center</property>
             <property name="valign">center</property>
             <property name="margin_left">5</property>
+            <property name="margin_bottom">10</property>
             <property name="border_width">5</property>
             <property name="orientation">vertical</property>
             <property name="spacing">15</property>
@@ -746,6 +755,44 @@
                         <property name="halign">center</property>
                         <property name="column_spacing">10</property>
                         <child>
+                          <object class="GtkLabel" id="curve_step_label">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <property name="label" translatable="yes">Number of steps</property>
+                          </object>
+                          <packing>
+                            <property name="left_attach">0</property>
+                            <property name="top_attach">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkScale" id="curve_step_scale">
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="adjustment">curve_step_adjust</property>
+                            <property name="fill_level">5000</property>
+                            <property name="round_digits">0</property>
+                            <property name="digits">0</property>
+                            <property name="value_pos">left</property>
+                          </object>
+                          <packing>
+                            <property name="left_attach">1</property>
+                            <property name="top_attach">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkLabel" id="curve_type_label">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <property name="label" translatable="yes">Type of curve</property>
+                          </object>
+                          <packing>
+                            <property name="left_attach">0</property>
+                            <property name="top_attach">1</property>
+                            <property name="height">2</property>
+                          </packing>
+                        </child>
+                        <child>
                           <object class="GtkRadioButton" id="bezier_obj_radiobtn">
                             <property name="label" translatable="yes">Bézier</property>
                             <property name="visible">True</property>
@@ -757,7 +804,7 @@
                           </object>
                           <packing>
                             <property name="left_attach">1</property>
-                            <property name="top_attach">0</property>
+                            <property name="top_attach">1</property>
                           </packing>
                         </child>
                         <child>
@@ -772,7 +819,7 @@
                           </object>
                           <packing>
                             <property name="left_attach">1</property>
-                            <property name="top_attach">1</property>
+                            <property name="top_attach">2</property>
                           </packing>
                         </child>
                         <child>
@@ -781,12 +828,13 @@
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="receives_default">False</property>
+                            <property name="halign">center</property>
                             <property name="draw_indicator">True</property>
                           </object>
                           <packing>
                             <property name="left_attach">0</property>
-                            <property name="top_attach">0</property>
-                            <property name="height">2</property>
+                            <property name="top_attach">3</property>
+                            <property name="width">2</property>
                           </packing>
                         </child>
                       </object>
@@ -797,7 +845,7 @@
                   <object class="GtkLabel" id="curve_label">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">Types of curve</property>
+                    <property name="label" translatable="yes">Curve algorithms</property>
                   </object>
                 </child>
               </object>
@@ -890,7 +938,6 @@
                         <property name="margin_top">5</property>
                         <property name="row_spacing">5</property>
                         <property name="column_spacing">5</property>
-                        <property name="column_homogeneous">True</property>
                         <child>
                           <object class="GtkButton" id="center_window_btn">
                             <property name="label" translatable="yes">Center</property>
@@ -926,9 +973,8 @@
                             <signal name="clicked" handler="btn_exit_clk" swapped="no"/>
                           </object>
                           <packing>
-                            <property name="left_attach">0</property>
-                            <property name="top_attach">1</property>
-                            <property name="width">2</property>
+                            <property name="left_attach">2</property>
+                            <property name="top_attach">0</property>
                           </packing>
                         </child>
                       </object>

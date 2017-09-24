@@ -1,18 +1,19 @@
 #ifndef UTILS_HPP
 #define UTILS_HPP
 
-#include "structures.hpp"
+#include "drawable.hpp"
 
 #include <algorithm>
 #include <cmath>
 #include <fstream>
+#include <memory>
 #include <sstream>
 #include <unordered_map>
 
 static cairo_surface_t *surface = nullptr;
 static GtkBuilder *builder;
 
-static std::unordered_map<std::string, drawable> objects;
+static std::unordered_map<std::string, std::unique_ptr<drawable>> objects;
 static window w;
 static int vp_height, vp_width, lclip;
 
@@ -88,7 +89,7 @@ std::list<coord> read_coord(const char *input) {
   return points;
 }
 
-drawable read_obj(const std::string &path) {
+polygon read_obj(const std::string &path) {
   std::ifstream file(path);
   std::string l;
   std::vector<std::string> line;
@@ -116,16 +117,14 @@ drawable read_obj(const std::string &path) {
     }
     faces.at(0);
   } catch (const std::invalid_argument &ia) {
-    return drawable(name, {});
+    return polygon(name, {});
   } catch (const std::out_of_range &o) {
-    return drawable(name, {});
+    return polygon(name, {});
   }
-  return drawable(name, points, matrix<int>(faces));
+  return polygon(name, points, matrix<int>(faces));
 }
 
-void write_obj(const std::string &path, const drawable &d) {
-  std::ofstream(path + ".obj") << d;
-}
+void write_obj(const drawable &d) { std::ofstream(d.name + ".obj") << d; }
 
 void clear_surface() {
   cairo_t *cr = cairo_create(surface);
@@ -137,18 +136,16 @@ void clear_surface() {
 void update() {
   clear_surface();
   cairo_t *cr = cairo_create(surface);
-  drawable("__window", {})
-      .draw(cr,
-            {coord(10, 10), coord(vp_width - 10, 10),
-             coord(vp_width - 10, vp_height - 10), coord(10, vp_height - 10)});
+  polygon border("__window", {coord(10, 10), coord(vp_width - 10, 10),
+                              coord(vp_width - 10, vp_height - 10),
+                              coord(10, vp_height - 10)});
+  border.draw(cr, border.orig);
 
   for (auto &obj : objects) {
     transform(m_transfer(-w.center) * m_rotate(-w.angle) *
                   m_scale(coord(1 / w.wid, 1 / w.hei)),
-              obj.second.orig, obj.second.scn);
-    if ((obj.second.clip(lclip)).size() != 0) {
-      obj.second.draw(cr, viewport(obj.second.clip(lclip)));
-    }
+              obj.second->orig, obj.second->scn);
+    obj.second->draw(cr, viewport(obj.second->clip()));
   }
 
   gtk_widget_queue_draw(
