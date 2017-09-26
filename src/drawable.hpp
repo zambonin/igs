@@ -287,26 +287,63 @@ public:
         double _step = 1000)
       : line(name, cs, cm), step(_step) {}
 
+  coord line_inters(const coord &c1, const coord &c2, const coord &c3,
+                    const coord &c4) {
+    double delta_x1 = c1.x - c2.x, delta_y1 = c1.y - c2.y,
+           delta_x2 = c3.x - c4.x, delta_y2 = c3.y - c4.y,
+           m1 = delta_y1 / delta_x1, m2 = delta_y2 / delta_x2;
+
+    if ((delta_x1 == 0.0 && delta_x2 == 0.0) || (m1 == m2)) {
+      return coord();
+    }
+
+    if (delta_x1 == 0.0) {
+      return coord(c1.x, m2 * (c1.x - c3.x) + c3.y);
+    }
+
+    if (delta_x2 == 0.0) {
+      return coord(c3.x, m1 * (c3.x - c1.x) + c1.y);
+    }
+
+    double x = (-m1 * c1.x + m2 * c3.x + c1.y - c3.y) / (m2 - m1),
+           y = m2 * (x - c3.x) + c3.y;
+
+    return coord(x, y);
+  }
+
   std::list<coord> clip(const window &w) override {
-    auto it = std::begin(scn), end = --std::end(scn);
-    std::list<coord> nSegment;
+    std::vector<coord> w_coord({coord(w.wid, w.hei), coord(w.wid, -w.hei),
+                                coord(-w.wid, -w.hei), coord(-w.wid, w.hei)}),
+        old_coords{std::begin(scn), std::end(scn)};
     std::list<coord> coords;
 
-    line l("segment", {coord((*it).x, (*it).y), coord((*it++).x, (*it++).y)});
-    nSegment = l.liang_barsky(w);
-    if (nSegment.size() != 0) {
-      coords.emplace_back(*std::begin(nSegment));
-    }
-    while (it != end) {
-      nSegment.clear();
-      auto actualIt = it;
-      it++;
-      line l1("segment",
-              {coord((*actualIt).x, (*actualIt).y), coord((*it).x, (*it).y)});
-      nSegment = l1.liang_barsky(w);
-      if (nSegment.size() != 0) {
-        coords.emplace_back(*(--std::end(nSegment)));
+    for (unsigned int i = 0; i < w_coord.size(); ++i) {
+      coord c1 = w_coord[i], c2 = w_coord[(i + 1) % w_coord.size()];
+      coords.clear();
+      for (unsigned int j = 0; j < old_coords.size(); ++j) {
+        coord c3 = old_coords[j], c4 = old_coords[(j + 1) % old_coords.size()];
+        bool s_out =
+            ((c2.x - c1.x) * (c3.y - c1.y) > (c2.y - c1.y) * (c3.x - c1.x));
+        bool t_out =
+            ((c2.x - c1.x) * (c4.y - c1.y) > (c2.y - c1.y) * (c4.x - c1.x));
+        if (s_out != t_out) {
+          if (!((j + 1) % old_coords.size() == 0))
+            coords.emplace_back(line_inters(c3, c4, c1, c2));
+          if (s_out) {
+            if (!((j + 1) % old_coords.size() == 0)) {
+              coords.push_back(c4);
+            }
+          }
+        } else if (!t_out && !s_out) {
+          if (!((j + 1) % old_coords.size() == 0)) {
+            coords.push_back(c4);
+          }
+        }
       }
+      old_coords.assign(coords.begin(), coords.end());
+    }
+    if (coords.empty()) {
+      coords.push_back(coord(w.wid, w.wid));
     }
     return coords;
   }
