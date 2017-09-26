@@ -18,15 +18,38 @@ static window w;
 static int vp_height, vp_width, lclip;
 
 matrix<double> m_transfer(const coord &c) {
-  return matrix<double>({{1, 0, 0}, {0, 1, 0}, {c.x, c.y, 1}});
+  return matrix<double>(
+      {{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {c.x, c.y, c.z, 1}});
 }
 
 matrix<double> m_rotate(double a) {
   return matrix<double>({{cos(a), -sin(a), 0}, {sin(a), cos(a), 0}, {0, 0, 1}});
 }
 
+matrix<double> m_rotatex(double a) {
+  return matrix<double>({{1, 0, 0, 0},
+                         {0, cos(a), sin(a), 0},
+                         {0, -sin(a), cos(a), 0},
+                         {0, 0, 0, 1}});
+}
+
+matrix<double> m_rotatey(double a) {
+  return matrix<double>({{cos(a), 0, -sin(a), 0},
+                         {0, 1, 0, 0},
+                         {sin(a), 0, cos(a), 0},
+                         {0, 0, 0, 1}});
+}
+
+matrix<double> m_rotatez(double a) {
+  return matrix<double>({{cos(a), sin(a), 0, 0},
+                         {-sin(a), cos(a), 0, 0},
+                         {0, 0, 1, 0},
+                         {0, 0, 0, 1}});
+}
+
 matrix<double> m_scale(const coord &c) {
-  return matrix<double>({{c.x, 0, 0}, {0, c.y, 0}, {0, 0, 1}});
+  return matrix<double>(
+      {{c.x, 0, 0}, {0, c.y, 0, 0}, {0, 0, c.z, 0}, {0, 0, 1}});
 }
 
 std::list<coord> viewport(const std::list<coord> &cs) {
