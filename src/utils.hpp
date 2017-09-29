@@ -22,10 +22,6 @@ matrix<double> m_transfer(const coord &c) {
       {{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {c.x, c.y, c.z, 1}});
 }
 
-matrix<double> m_rotate(double a) {
-  return matrix<double>({{cos(a), -sin(a), 0}, {sin(a), cos(a), 0}, {0, 0, 1}});
-}
-
 matrix<double> m_rotatex(double a) {
   return matrix<double>({{1, 0, 0, 0},
                          {0, cos(a), sin(a), 0},
@@ -49,7 +45,16 @@ matrix<double> m_rotatez(double a) {
 
 matrix<double> m_scale(const coord &c) {
   return matrix<double>(
-      {{c.x, 0, 0}, {0, c.y, 0, 0}, {0, 0, c.z, 0}, {0, 0, 1}});
+      {{c.x, 0, 0, 0}, {0, c.y, 0, 0}, {0, 0, c.z, 0}, {0, 0, 0, 1}});
+}
+
+matrix<double> m_rotate(double a) {
+  return matrix<double>({{cos(a), sin(a), 0, 0},
+                         {-sin(a), cos(a), 0, 0},
+                         {0, 0, 1, 0},
+                         {0, 0, 0, 1}});
+  //
+  // return m_rotatex(a) * m_rotatey(a) * m_rotatez(a);
 }
 
 std::list<coord> viewport(const std::list<coord> &cs) {
@@ -67,7 +72,7 @@ void transform(const matrix<double> &m, std::list<coord> &from,
                std::list<coord> &to) {
   auto it = to.begin();
   for (auto &i : from) {
-    *it++ = coord((matrix<double>({{i.x, i.y, i.z}}) * m)[0]);
+    *it++ = coord((matrix<double>({{i.x, i.y, i.z, 1}}) * m)[0]);
   }
 }
 
@@ -76,7 +81,7 @@ void transform(const matrix<double> &m, std::list<coord> &cs) {
 }
 
 void transform(const matrix<double> &m, coord &c) {
-  c = coord((matrix<double>({{c.x, c.y, c.z}}) * m)[0]);
+  c = coord((matrix<double>({{c.x, c.y, c.z, 1}}) * m)[0]);
 }
 
 template <typename Out>
@@ -177,7 +182,10 @@ void update() {
 }
 
 void pan(const coord &c) {
+  std::cout << c << " " << m_transfer(c) << std::endl;
+  std::cout << "Center: " << w.center << std::endl;
   transform(m_transfer(c), w.center);
+  std::cout << "Center" << w.center << std::endl;
   update();
 }
 

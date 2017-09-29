@@ -133,12 +133,18 @@ extern "C" G_MODULE_EXPORT void btn_trans_figure_clk(GtkWidget *widget,
   coord vector(gtk_range_get_value(xcoor), gtk_range_get_value(ycoor));
 
   drawable &d = *(objects.find(obj)->second.get());
+  double dt =
+      sqrt((d.center()).y * (d.center()).y + (d.center()).z * (d.center()).z);
+  double b = atan((d.center()).x / (d.center()).z);
+  double a = atan((d.center()).y / dt);
   std::unordered_map<int, matrix<double>> bases = {
       {0, m_transfer(vector)},
       {1, m_transfer(-d.center()) * m_scale(vector) * m_transfer(d.center())},
       {2, m_transfer(-vector) * m_rotate(angle) * m_transfer(vector)},
       {3, m_transfer(coord()) * m_rotate(angle)},
-      {4, m_transfer(-d.center()) * m_rotate(angle) * m_transfer(d.center())},
+      {4, m_transfer(-d.center()) * m_rotatex(a) * m_rotatey(-b) *
+              m_rotatez(angle) * m_rotatey(b) * m_rotatex(-a) *
+              m_transfer(d.center())},
   };
 
   transform(bases.find(op_id)->second, d.orig);
