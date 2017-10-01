@@ -62,12 +62,28 @@ extern "C" G_MODULE_EXPORT void btn_clip_clk(GtkWidget *widget,
 
 extern "C" G_MODULE_EXPORT void btn_rotate_left_clk(GtkWidget *widget,
                                                     GtkWidget *scale) {
-  rotate(0, gtk_range_get_value(GTK_RANGE(scale)), 0);
+
+  GtkRange *aY =
+      GTK_RANGE(gtk_builder_get_object(builder, "rotate_param_scale1"));
+  GtkRange *aZ =
+      GTK_RANGE(gtk_builder_get_object(builder, "rotate_param_scale2"));
+
+  const double angley = gtk_range_get_value(GTK_RANGE(aY));
+  const double anglez = gtk_range_get_value(GTK_RANGE(aZ));
+
+  rotate(gtk_range_get_value(GTK_RANGE(scale)), angley, anglez);
 }
 
 extern "C" G_MODULE_EXPORT void btn_rotate_right_clk(GtkWidget *widget,
                                                      GtkWidget *scale) {
-  rotate(0, -gtk_range_get_value(GTK_RANGE(scale)), 0);
+  GtkRange *aY =
+      GTK_RANGE(gtk_builder_get_object(builder, "rotate_param_scale1"));
+  GtkRange *aZ =
+      GTK_RANGE(gtk_builder_get_object(builder, "rotate_param_scale2"));
+
+  const double angley = gtk_range_get_value(GTK_RANGE(aY));
+  const double anglez = gtk_range_get_value(GTK_RANGE(aZ));
+  rotate(-gtk_range_get_value(GTK_RANGE(scale)), -angley, -anglez);
 }
 
 extern "C" G_MODULE_EXPORT void btn_pan_up_clk(GtkWidget *widget,
@@ -145,7 +161,8 @@ extern "C" G_MODULE_EXPORT void btn_trans_figure_clk(GtkWidget *widget,
   double dt =
       sqrt((d.center()).y * (d.center()).y + (d.center()).z * (d.center()).z);
   double b = atan((d.center()).x / (d.center()).z);
-  double a = asin((d.center()).y / dt);
+  double a = atan((d.center()).y / dt);
+  std::cout << "Alfa: " << a << "Beta: " << b << "Delta: " << dt << std::endl;
   std::unordered_map<int, matrix<double>> bases = {
       {0, m_transfer(vector)},
       {1, m_transfer(-d.center()) * m_scale(vector) * m_transfer(d.center())},
