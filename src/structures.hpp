@@ -10,7 +10,7 @@ class coord {
 public:
   coord(double _x = 0, double _y = 0, double _z = 1) : x(_x), y(_y), z(_z) {}
 
-  coord(std::vector<double> c) : x(c[0]), y(c[1]), z(1) {}
+  coord(std::vector<double> c) : x(c[0]), y(c[1]), z(c[2]) {}
 
   bool operator!=(const coord &rhs) {
     return this->x != rhs.x || this->y != rhs.y;
@@ -92,7 +92,7 @@ public:
                   double b = 1.0 / 20.0) noexcept
       : wid(width - b), hei(height - b) {}
 
-  double wid, hei, angle{0};
+  double wid, hei, anglex{0}, angley{0}, anglez{0};
   coord center{};
 };
 

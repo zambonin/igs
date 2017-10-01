@@ -48,13 +48,18 @@ matrix<double> m_scale(const coord &c) {
       {{c.x, 0, 0, 0}, {0, c.y, 0, 0}, {0, 0, c.z, 0}, {0, 0, 0, 1}});
 }
 
+matrix<double> m_rotatexyz(double ax, double ay, double az) {
+  // return matrix<double>({{cos(a), sin(a), 0, 0}, {-sin(a), cos(a), 0, 0}, {0,
+  // 0, 1, 0}, {0, 0, 0, 1}});
+  return m_rotatex(ax) * m_rotatey(ay) * m_rotatez(az);
+}
+
 matrix<double> m_rotate(double a) {
   return matrix<double>({{cos(a), sin(a), 0, 0},
                          {-sin(a), cos(a), 0, 0},
                          {0, 0, 1, 0},
                          {0, 0, 0, 1}});
-  //
-  // return m_rotatex(a) * m_rotatey(a) * m_rotatez(a);
+  // return m_rotatex(ax) * m_rotatey(ay) * m_rotatez(az);
 }
 
 std::list<coord> viewport(const std::list<coord> &cs) {
@@ -170,7 +175,8 @@ void update() {
   border.draw(cr, border.orig);
 
   for (auto &obj : objects) {
-    transform(m_transfer(-w.center) * m_rotate(-w.angle) *
+    transform(m_transfer(-w.center) *
+                  m_rotatexyz(w.anglex, w.angley, w.anglez) *
                   m_scale(coord(1 / w.wid, 1 / w.hei)),
               obj.second->orig, obj.second->scn);
     obj.second->draw(cr, viewport(obj.second->clip()));
@@ -182,15 +188,14 @@ void update() {
 }
 
 void pan(const coord &c) {
-  std::cout << c << " " << m_transfer(c) << std::endl;
-  std::cout << "Center: " << w.center << std::endl;
   transform(m_transfer(c), w.center);
-  std::cout << "Center" << w.center << std::endl;
   update();
 }
 
-void rotate(const double angle) {
-  w.angle += (M_PI / 180) * angle;
+void rotate(const double anglex, const double angley, const double anglez) {
+  w.anglex += (M_PI / 180) * anglex;
+  w.angley += (M_PI / 180) * angley;
+  w.anglez += (M_PI / 180) * anglez;
   update();
 }
 

@@ -21,6 +21,9 @@ extern "C" G_MODULE_EXPORT void btn_draw_figure_clk(GtkWidget *widget,
 
   std::string s(gtk_entry_get_text(name));
   std::list<coord> c = read_coord(gtk_entry_get_text(coor));
+  for (auto ct : c) {
+    std::cout << ct << std::endl;
+  }
   bool curve = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(cbtn));
   bool spline = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(sbtn));
   bool fill = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(entry));
@@ -59,12 +62,12 @@ extern "C" G_MODULE_EXPORT void btn_clip_clk(GtkWidget *widget,
 
 extern "C" G_MODULE_EXPORT void btn_rotate_left_clk(GtkWidget *widget,
                                                     GtkWidget *scale) {
-  rotate(gtk_range_get_value(GTK_RANGE(scale)));
+  rotate(0, gtk_range_get_value(GTK_RANGE(scale)), 0);
 }
 
 extern "C" G_MODULE_EXPORT void btn_rotate_right_clk(GtkWidget *widget,
                                                      GtkWidget *scale) {
-  rotate(-gtk_range_get_value(GTK_RANGE(scale)));
+  rotate(0, -gtk_range_get_value(GTK_RANGE(scale)), 0);
 }
 
 extern "C" G_MODULE_EXPORT void btn_pan_up_clk(GtkWidget *widget,
@@ -127,24 +130,31 @@ extern "C" G_MODULE_EXPORT void btn_trans_figure_clk(GtkWidget *widget,
       GTK_RANGE(gtk_builder_get_object(builder, "x_coord_param_scale"));
   GtkRange *ycoor =
       GTK_RANGE(gtk_builder_get_object(builder, "y_coord_param_scale"));
+  GtkRange *aY =
+      GTK_RANGE(gtk_builder_get_object(builder, "angle_param_scale1"));
+  GtkRange *aZ =
+      GTK_RANGE(gtk_builder_get_object(builder, "angle_param_scale2"));
 
   const int op_id = gtk_combo_box_get_active(GTK_COMBO_BOX(ops));
-  const double angle = M_PI * gtk_range_get_value(GTK_RANGE(entry)) / 180;
+  const double anglex = M_PI * gtk_range_get_value(GTK_RANGE(entry)) / 180;
+  const double angley = M_PI * gtk_range_get_value(GTK_RANGE(aY)) / 180;
+  const double anglez = M_PI * gtk_range_get_value(GTK_RANGE(aZ)) / 180;
   coord vector(gtk_range_get_value(xcoor), gtk_range_get_value(ycoor));
 
   drawable &d = *(objects.find(obj)->second.get());
   double dt =
       sqrt((d.center()).y * (d.center()).y + (d.center()).z * (d.center()).z);
   double b = atan((d.center()).x / (d.center()).z);
-  double a = atan((d.center()).y / dt);
+  double a = asin((d.center()).y / dt);
   std::unordered_map<int, matrix<double>> bases = {
       {0, m_transfer(vector)},
       {1, m_transfer(-d.center()) * m_scale(vector) * m_transfer(d.center())},
-      {2, m_transfer(-vector) * m_rotate(angle) * m_transfer(vector)},
-      {3, m_transfer(coord()) * m_rotate(angle)},
+      {2, m_transfer(-vector) * m_rotatexyz(anglex, angley, anglez) *
+              m_transfer(vector)},
+      {3, m_transfer(coord()) * m_rotatexyz(anglex, angley, anglez)},
       {4, m_transfer(-d.center()) * m_rotatex(a) * m_rotatey(-b) *
-              m_rotatez(angle) * m_rotatey(b) * m_rotatex(-a) *
-              m_transfer(d.center())},
+              m_rotatexyz(anglex, angley, anglez) * m_rotatey(b) *
+              m_rotatex(-a) * m_transfer(d.center())},
   };
 
   transform(bases.find(op_id)->second, d.orig);
