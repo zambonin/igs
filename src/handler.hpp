@@ -162,7 +162,8 @@ extern "C" G_MODULE_EXPORT void btn_trans_figure_clk(GtkWidget *widget,
       sqrt((d.center()).y * (d.center()).y + (d.center()).z * (d.center()).z);
   double b = atan((d.center()).x / (d.center()).z);
   double a = atan((d.center()).y / dt);
-  std::cout << "Alfa: " << a << "Beta: " << b << "Delta: " << dt << std::endl;
+  // std::cout << "Alfa: " << a << "Beta: " << b << "Delta: " << dt <<
+  // std::endl;
   std::unordered_map<int, matrix<double>> bases = {
       {0, m_transfer(vector)},
       {1, m_transfer(-d.center()) * m_scale(vector) * m_transfer(d.center())},
