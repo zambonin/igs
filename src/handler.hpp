@@ -167,12 +167,9 @@ extern "C" G_MODULE_EXPORT void btn_trans_figure_clk(GtkWidget *widget,
   std::unordered_map<int, matrix<double>> bases = {
       {0, m_transfer(vector)},
       {1, m_transfer(-d.center()) * m_scale(vector) * m_transfer(d.center())},
-      {2, m_transfer(-vector) * m_rotatex(a) * m_rotatey(-b) *
-              m_rotatexyz(anglex, angley, anglez) * m_rotatey(b) *
-              m_rotatex(-a) * m_transfer(vector)},
-      {3, m_transfer(coord()) * m_rotatex(a) * m_rotatey(-b) *
-              m_rotatexyz(anglex, angley, anglez) * m_rotatey(b) *
-              m_rotatex(-a)},
+      {2, m_transfer(-vector) * m_rotatexyz(anglex, angley, anglez) *
+              m_transfer(vector)},
+      {3, m_transfer(coord()) * m_rotatexyz(anglex, angley, anglez)},
       {4, m_transfer(-d.center()) * m_rotatex(a) * m_rotatey(-b) *
               m_rotatexyz(anglex, angley, anglez) * m_rotatey(b) *
               m_rotatex(-a) * m_transfer(d.center())},
