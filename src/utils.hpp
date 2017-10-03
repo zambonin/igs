@@ -184,11 +184,11 @@ void update() {
                   m_rotatexyz(w.anglex, w.angley, w.anglez) *
                   m_scale(coord(1 / w.wid, 1 / w.hei)),
               obj.second->orig, obj.second->scn);
-    for (auto &c : obj.second->scn) {
-      c.x = c.x / (c.z / 10);
-      c.y = c.y / (c.z / 10);
-      c.z = 10;
-    }
+    // for(auto &c : obj.second->scn) {
+    // c.x = c.x/(c.z/10);
+    // c.y = c.y/(c.z/10);
+    // c.z = 10;
+    // }
     // transform(m_scale(coord(1 / w.wid, 1 / w.hei)), obj.second->scn,
     // obj.second->scn);
     obj.second->draw(cr, viewport(obj.second->clip()));
