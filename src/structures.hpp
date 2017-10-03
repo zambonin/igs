@@ -40,6 +40,8 @@ public:
   explicit matrix(std::vector<std::vector<T>> e)
       : l(e.size()), c(e[0].size()), elem(e) {}
 
+  size_t size() const noexcept { return elem.size(); }
+
   std::vector<T> &operator[](int i) { return elem[i]; }
 
   const std::vector<T> &operator[](int i) const { return elem[i]; }

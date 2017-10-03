@@ -211,16 +211,23 @@ public:
       : drawable(n, cs, f), fill(_fill) {}
 
   void draw(cairo_t *cr, const std::list<coord> &points) override {
-    auto it = std::begin(points), end = --std::end(points);
-    cairo_move_to(cr, (*it).x, (*it).y);
-    while (it++ != end) {
-      cairo_line_to(cr, (*it).x, (*it).y);
+    std::vector<coord> pts{std::begin(points), std::end(points)};
+    for (size_t i = 0; i < faces.size(); ++i) {
+      std::list<coord> face;
+      for (size_t j = 0; j < faces[i].size(); ++j) {
+        face.emplace_back(pts[faces[i][j] - 1]);
+      }
+      auto it = std::begin(face), end = --std::end(face);
+      cairo_move_to(cr, (*it).x, (*it).y);
+      while (it++ != end) {
+        cairo_line_to(cr, (*it).x, (*it).y);
+      }
+      cairo_close_path(cr);
+      if (fill) {
+        cairo_fill(cr);
+      }
+      cairo_stroke(cr);
     }
-    cairo_close_path(cr);
-    if (fill) {
-      cairo_fill(cr);
-    }
-    cairo_stroke(cr);
   }
 
   coord line_inters(const coord &c1, const coord &c2, const coord &c3,
