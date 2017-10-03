@@ -160,16 +160,19 @@ extern "C" G_MODULE_EXPORT void btn_trans_figure_clk(GtkWidget *widget,
   drawable &d = *(objects.find(obj)->second.get());
   double dt =
       sqrt((d.center()).y * (d.center()).y + (d.center()).z * (d.center()).z);
-  double b = atan((d.center()).x / (d.center()).z);
-  double a = atan((d.center()).y / dt);
+  double b = atan((d.center()).x / dt);
+  double a = atan((d.center()).y / (d.center()).z);
   // std::cout << "Alfa: " << a << "Beta: " << b << "Delta: " << dt <<
   // std::endl;
   std::unordered_map<int, matrix<double>> bases = {
       {0, m_transfer(vector)},
       {1, m_transfer(-d.center()) * m_scale(vector) * m_transfer(d.center())},
-      {2, m_transfer(-vector) * m_rotatexyz(anglex, angley, anglez) *
-              m_transfer(vector)},
-      {3, m_transfer(coord()) * m_rotatexyz(anglex, angley, anglez)},
+      {2, m_transfer(-vector) * m_rotatex(a) * m_rotatey(-b) *
+              m_rotatexyz(anglex, angley, anglez) * m_rotatey(b) *
+              m_rotatex(-a) * m_transfer(vector)},
+      {3, m_transfer(coord()) * m_rotatex(a) * m_rotatey(-b) *
+              m_rotatexyz(anglex, angley, anglez) * m_rotatey(b) *
+              m_rotatex(-a)},
       {4, m_transfer(-d.center()) * m_rotatex(a) * m_rotatey(-b) *
               m_rotatexyz(anglex, angley, anglez) * m_rotatey(b) *
               m_rotatex(-a) * m_transfer(d.center())},
