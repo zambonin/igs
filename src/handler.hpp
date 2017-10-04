@@ -88,22 +88,22 @@ extern "C" G_MODULE_EXPORT void btn_rotate_right_clk(GtkWidget *widget,
 
 extern "C" G_MODULE_EXPORT void btn_pan_up_clk(GtkWidget *widget,
                                                GtkWidget *scale) {
-  pan(coord(0, gtk_range_get_value(GTK_RANGE(scale))));
+  pan(coord(0, gtk_range_get_value(GTK_RANGE(scale)), 0));
 }
 
 extern "C" G_MODULE_EXPORT void btn_pan_left_clk(GtkWidget *widget,
                                                  GtkWidget *scale) {
-  pan(coord(-gtk_range_get_value(GTK_RANGE(scale)), 0));
+  pan(coord(-gtk_range_get_value(GTK_RANGE(scale)), 0, 0));
 }
 
 extern "C" G_MODULE_EXPORT void btn_pan_right_clk(GtkWidget *widget,
                                                   GtkWidget *scale) {
-  pan(coord(gtk_range_get_value(GTK_RANGE(scale)), 0));
+  pan(coord(gtk_range_get_value(GTK_RANGE(scale)), 0, 0));
 }
 
 extern "C" G_MODULE_EXPORT void btn_pan_down_clk(GtkWidget *widget,
                                                  GtkWidget *scale) {
-  pan(coord(0, -gtk_range_get_value(GTK_RANGE(scale))));
+  pan(coord(0, -gtk_range_get_value(GTK_RANGE(scale)), 0));
 }
 
 extern "C" G_MODULE_EXPORT void btn_zoom_out_clk(GtkWidget *widget,

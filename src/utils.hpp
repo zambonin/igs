@@ -19,7 +19,7 @@ static int vp_height, vp_width, lclip;
 
 matrix<double> m_perspective(const double d) {
   return matrix<double>(
-      {{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 1 / d, 0}});
+      {{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1 / d, 0}, {0, 0, 0, 1}});
 }
 
 matrix<double> m_transfer(const coord &c) {
@@ -69,12 +69,19 @@ matrix<double> m_rotate(double a) {
 
 std::list<coord> viewport(const std::list<coord> &cs) {
   std::list<coord> vp_coord;
-  double x, y;
+  double x, y, xp, yp;
   for (auto &i : cs) {
-    x = ((i.x + 1) / (1 - -1)) * (vp_width - 0);
-    y = (1 - ((i.y + 1) / (1 - -1))) * (vp_height - 0);
+    // std::cout << "ZEEEE: " << i << std::endl;
+    xp = i.x;
+    yp = i.y;
+    // std::cout << "P'S: " << xp << " " << yp << std::endl;
+    x = ((xp + 1) / (1 - -1)) * (vp_width - 0);
+    y = (1 - ((yp + 1) / (1 - -1))) * (vp_height - 0);
+    // std::cout << i.x << " " << i.y << " " << i.z << std::endl;
     vp_coord.emplace_back(coord(x, y));
   }
+
+  // std::cout << "=========================" << std::endl;
   return vp_coord;
 }
 
@@ -182,16 +189,19 @@ void update() {
   for (auto &obj : objects) {
     transform(m_transfer(-w.center) *
                   m_rotatexyz(w.anglex, w.angley, w.anglez) *
-                  m_scale(coord(1 / w.wid, 1 / w.hei)),
+                  m_scale(coord(1 / w.wid, 1 / w.hei, 1)),
               obj.second->orig, obj.second->scn);
-    // for(auto &c : obj.second->scn) {
-    // c.x = c.x/(c.z/10);
-    // c.y = c.y/(c.z/10);
-    // c.z = 10;
+
+    // std::list<coord> persp;
+    // persp.assign(std::begin(obj.second->scn), std::end(obj.second->scn));
+    // for(auto& c: persp) {
+    // if (c.z != 0) {
+    // c.x = 200*c.x/c.z;
+    // c.y = 200*c.y/c.z;
     // }
-    // transform(m_scale(coord(1 / w.wid, 1 / w.hei)), obj.second->scn,
-    // obj.second->scn);
-    obj.second->draw(cr, viewport(obj.second->clip()));
+    // }
+
+    obj.second->draw(cr, viewport(obj.second->scn));
   }
 
   gtk_widget_queue_draw(
