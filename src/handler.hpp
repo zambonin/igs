@@ -21,9 +21,6 @@ extern "C" G_MODULE_EXPORT void btn_draw_figure_clk(GtkWidget *widget,
 
   std::string s(gtk_entry_get_text(name));
   std::list<coord> c = read_coord(gtk_entry_get_text(coor));
-  for (auto ct : c) {
-    std::cout << ct << std::endl;
-  }
   bool curve = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(cbtn));
   bool spline = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(sbtn));
   bool fill = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(entry));
@@ -60,30 +57,27 @@ extern "C" G_MODULE_EXPORT void btn_clip_clk(GtkWidget *widget,
   lclip = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(btn));
 }
 
-extern "C" G_MODULE_EXPORT void btn_rotate_left_clk(GtkWidget *widget,
-                                                    GtkWidget *scale) {
-
-  GtkRange *aY =
-      GTK_RANGE(gtk_builder_get_object(builder, "rotate_param_scale1"));
-  GtkRange *aZ =
-      GTK_RANGE(gtk_builder_get_object(builder, "rotate_param_scale2"));
-
-  const double angley = gtk_range_get_value(GTK_RANGE(aY));
-  const double anglez = gtk_range_get_value(GTK_RANGE(aZ));
-
-  rotate(gtk_range_get_value(GTK_RANGE(scale)), angley, anglez);
+std::vector<double> get_range_elements(const std::vector<std::string> &elems) {
+  std::vector<double> values;
+  for (auto &e : elems) {
+    values.emplace_back(gtk_range_get_value(
+        GTK_RANGE(gtk_builder_get_object(builder, e.c_str()))));
+  }
+  return values;
 }
 
-extern "C" G_MODULE_EXPORT void btn_rotate_right_clk(GtkWidget *widget,
-                                                     GtkWidget *scale) {
-  GtkRange *aY =
-      GTK_RANGE(gtk_builder_get_object(builder, "rotate_param_scale1"));
-  GtkRange *aZ =
-      GTK_RANGE(gtk_builder_get_object(builder, "rotate_param_scale2"));
+extern "C" G_MODULE_EXPORT void btn_rotate_left_clk() {
+  std::vector<std::string> elems{
+      {"x_rotate_param_scale", "y_rotate_param_scale", "z_rotate_param_scale"}};
+  auto angles = get_range_elements(elems);
+  rotate(angles[0], angles[1], angles[2]);
+}
 
-  const double angley = gtk_range_get_value(GTK_RANGE(aY));
-  const double anglez = gtk_range_get_value(GTK_RANGE(aZ));
-  rotate(-gtk_range_get_value(GTK_RANGE(scale)), -angley, -anglez);
+extern "C" G_MODULE_EXPORT void btn_rotate_right_clk() {
+  std::vector<std::string> elems{
+      {"x_rotate_param_scale", "y_rotate_param_scale", "z_rotate_param_scale"}};
+  auto angles = get_range_elements(elems);
+  rotate(-angles[0], -angles[1], -angles[2]);
 }
 
 extern "C" G_MODULE_EXPORT void btn_pan_up_clk(GtkWidget *widget,
@@ -131,47 +125,39 @@ extern "C" G_MODULE_EXPORT void btn_clear_clk(GtkWidget *widget,
 }
 
 extern "C" G_MODULE_EXPORT void btn_trans_figure_clk(GtkWidget *widget,
-                                                     GtkWidget *entry) {
-  GtkComboBoxText *combo =
-      GTK_COMBO_BOX_TEXT(gtk_builder_get_object(builder, "object_list"));
-  gchar *obj = gtk_combo_box_text_get_active_text(combo);
-
+                                                     GtkWidget *combo) {
+  gchar *obj = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo));
   if (obj == nullptr) {
     return;
   }
 
+  drawable &d = *(objects.find(obj)->second.get());
   GtkComboBoxText *ops =
       GTK_COMBO_BOX_TEXT(gtk_builder_get_object(builder, "operation_list"));
-  GtkRange *xcoor =
-      GTK_RANGE(gtk_builder_get_object(builder, "x_coord_param_scale"));
-  GtkRange *ycoor =
-      GTK_RANGE(gtk_builder_get_object(builder, "y_coord_param_scale"));
-  GtkRange *aY =
-      GTK_RANGE(gtk_builder_get_object(builder, "angle_param_scale1"));
-  GtkRange *aZ =
-      GTK_RANGE(gtk_builder_get_object(builder, "angle_param_scale2"));
-
   const int op_id = gtk_combo_box_get_active(GTK_COMBO_BOX(ops));
-  const double anglex = M_PI * gtk_range_get_value(GTK_RANGE(entry)) / 180;
-  const double angley = M_PI * gtk_range_get_value(GTK_RANGE(aY)) / 180;
-  const double anglez = M_PI * gtk_range_get_value(GTK_RANGE(aZ)) / 180;
-  coord vector(gtk_range_get_value(xcoor), gtk_range_get_value(ycoor));
 
-  drawable &d = *(objects.find(obj)->second.get());
-  double dt =
-      sqrt((d.center()).y * (d.center()).y + (d.center()).z * (d.center()).z);
-  double b = atan((d.center()).x / dt);
-  double a = atan((d.center()).y / (d.center()).z);
-  // std::cout << "Alfa: " << a << "Beta: " << b << "Delta: " << dt <<
-  // std::endl;
+  std::vector<std::string> elems{"x_coord_param_scale", "y_coord_param_scale",
+                                 "z_coord_param_scale", "x_angle_param_scale",
+                                 "y_angle_param_scale", "z_angle_param_scale"};
+  auto values = get_range_elements(elems);
+
+  coord vector(values[0], values[1], values[2]);
+  const double angle_x = M_PI * values[3] / 180,
+               angle_y = M_PI * values[4] / 180,
+               angle_z = M_PI * values[5] / 180,
+               dt = sqrt((d.center()).y * (d.center()).y +
+                         (d.center()).z * (d.center()).z),
+               a = atan((d.center()).y / (d.center()).z),
+               b = atan((d.center()).x / dt);
+
   std::unordered_map<int, matrix<double>> bases = {
       {0, m_transfer(vector)},
       {1, m_transfer(-d.center()) * m_scale(vector) * m_transfer(d.center())},
-      {2, m_transfer(-vector) * m_rotatexyz(anglex, angley, anglez) *
+      {2, m_transfer(-vector) * m_rotatexyz(angle_x, angle_y, angle_z) *
               m_transfer(vector)},
-      {3, m_transfer(coord()) * m_rotatexyz(anglex, angley, anglez)},
+      {3, m_transfer(coord()) * m_rotatexyz(angle_x, angle_y, angle_z)},
       {4, m_transfer(-d.center()) * m_rotatex(a) * m_rotatey(-b) *
-              m_rotatexyz(anglex, angley, anglez) * m_rotatey(b) *
+              m_rotatexyz(angle_x, angle_y, angle_z) * m_rotatey(b) *
               m_rotatex(-a) * m_transfer(d.center())},
   };
 

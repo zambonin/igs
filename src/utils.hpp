@@ -54,8 +54,6 @@ matrix<double> m_scale(const coord &c) {
 }
 
 matrix<double> m_rotatexyz(double ax, double ay, double az) {
-  // return matrix<double>({{cos(a), sin(a), 0, 0}, {-sin(a), cos(a), 0, 0}, {0,
-  // 0, 1, 0}, {0, 0, 0, 1}});
   return m_rotatex(ax) * m_rotatey(ay) * m_rotatez(az);
 }
 
@@ -64,24 +62,16 @@ matrix<double> m_rotate(double a) {
                          {-sin(a), cos(a), 0, 0},
                          {0, 0, 1, 0},
                          {0, 0, 0, 1}});
-  // return m_rotatex(ax) * m_rotatey(ay) * m_rotatez(az);
 }
 
 std::list<coord> viewport(const std::list<coord> &cs) {
   std::list<coord> vp_coord;
-  double x, y, xp, yp;
+  double x, y;
   for (auto &i : cs) {
-    // std::cout << "ZEEEE: " << i << std::endl;
-    xp = i.x;
-    yp = i.y;
-    // std::cout << "P'S: " << xp << " " << yp << std::endl;
-    x = ((xp + 1) / (1 - -1)) * (vp_width - 0);
-    y = (1 - ((yp + 1) / (1 - -1))) * (vp_height - 0);
-    // std::cout << i.x << " " << i.y << " " << i.z << std::endl;
+    x = ((i.x + 1) / (1 - -1)) * (vp_width - 0);
+    y = (1 - ((i.y + 1) / (1 - -1))) * (vp_height - 0);
     vp_coord.emplace_back(coord(x, y));
   }
-
-  // std::cout << "=========================" << std::endl;
   return vp_coord;
 }
 
@@ -191,17 +181,16 @@ void update() {
                   m_rotatexyz(w.anglex, w.angley, w.anglez) *
                   m_scale(coord(1 / w.wid, 1 / w.hei, 1)),
               obj.second->orig, obj.second->scn);
-
-    // std::list<coord> persp;
-    // persp.assign(std::begin(obj.second->scn), std::end(obj.second->scn));
-    // for(auto& c: persp) {
-    // if (c.z != 0) {
-    // c.x = 200*c.x/c.z;
-    // c.y = 200*c.y/c.z;
-    // }
-    // }
-
-    obj.second->draw(cr, viewport(obj.second->scn));
+    std::vector<coord> pts{std::begin(obj.second->scn),
+                           std::end(obj.second->scn)};
+    for (size_t f = 0; f < obj.second->faces.size(); ++f) {
+      std::list<coord> face;
+      for (size_t j = 0; j < obj.second->faces[f].size(); ++j) {
+        face.emplace_back(pts[obj.second->faces[f][j] - 1]);
+      }
+      polygon d("", face);
+      d.draw(cr, viewport(d.clip(window())));
+    }
   }
 
   gtk_widget_queue_draw(
