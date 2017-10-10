@@ -15,12 +15,7 @@ static GtkBuilder *builder;
 
 static std::unordered_map<std::string, std::unique_ptr<drawable>> objects;
 static window w;
-static int vp_height, vp_width, lclip;
-
-matrix<double> m_perspective(const double d) {
-  return matrix<double>(
-      {{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1 / d, 0}, {0, 0, 0, 1}});
-}
+static int vp_height, vp_width, lclip, proj_value;
 
 matrix<double> m_transfer(const coord &c) {
   return matrix<double>(
@@ -183,6 +178,16 @@ void update() {
               obj.second->orig, obj.second->scn);
     std::vector<coord> pts{std::begin(obj.second->scn),
                            std::end(obj.second->scn)};
+
+    if (proj_value != 0) {
+      for (auto &p : pts) {
+        if (p.z != 0) {
+          p.x = proj_value * p.x / p.z;
+          p.y = proj_value * p.y / p.z;
+        }
+      }
+    }
+
     for (size_t f = 0; f < obj.second->faces.size(); ++f) {
       std::list<coord> face;
       for (size_t j = 0; j < obj.second->faces[f].size(); ++j) {

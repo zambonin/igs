@@ -14,6 +14,12 @@
     <property name="step_increment">1</property>
     <property name="page_increment">10</property>
   </object>
+  <object class="GtkAdjustment" id="proj_param_adjust">
+    <property name="lower">1</property>
+    <property name="upper">500</property>
+    <property name="step_increment">1</property>
+    <property name="page_increment">10</property>
+  </object>
   <object class="GtkAdjustment" id="x_angle_param_adjust">
     <property name="upper">359</property>
     <property name="step_increment">1</property>
@@ -848,7 +854,7 @@
                               <object class="GtkLabel" id="opt_pan_label">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
-                                <property name="label" translatable="yes">Pan/Zoom</property>
+                                <property name="label" translatable="yes">Mov.</property>
                               </object>
                               <packing>
                                 <property name="tab_fill">False</property>
@@ -946,7 +952,7 @@
                               <object class="GtkLabel" id="opt_rot_label">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
-                                <property name="label" translatable="yes">Rotate</property>
+                                <property name="label" translatable="yes">Rot.</property>
                               </object>
                               <packing>
                                 <property name="position">1</property>
@@ -954,10 +960,57 @@
                               </packing>
                             </child>
                             <child>
-                              <placeholder/>
+                              <object class="GtkBox" id="mov_opt_box_projection">
+                                <property name="visible">True</property>
+                                <property name="can_focus">False</property>
+                                <property name="homogeneous">True</property>
+                                <child>
+                                  <object class="GtkCheckButton" id="persp_param_chkbtn">
+                                    <property name="label" translatable="yes">Perspective
+projection</property>
+                                    <property name="visible">True</property>
+                                    <property name="can_focus">True</property>
+                                    <property name="receives_default">False</property>
+                                    <property name="draw_indicator">True</property>
+                                    <signal name="toggled" handler="btn_proj_clk" object="persp_param_scale" swapped="no"/>
+                                  </object>
+                                  <packing>
+                                    <property name="expand">False</property>
+                                    <property name="fill">True</property>
+                                    <property name="position">0</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <object class="GtkScale" id="persp_param_scale">
+                                    <property name="visible">True</property>
+                                    <property name="can_focus">True</property>
+                                    <property name="adjustment">proj_param_adjust</property>
+                                    <property name="fill_level">500</property>
+                                    <property name="round_digits">1</property>
+                                    <property name="digits">0</property>
+                                    <property name="value_pos">left</property>
+                                  </object>
+                                  <packing>
+                                    <property name="expand">False</property>
+                                    <property name="fill">True</property>
+                                    <property name="position">1</property>
+                                  </packing>
+                                </child>
+                              </object>
+                              <packing>
+                                <property name="position">2</property>
+                              </packing>
                             </child>
                             <child type="tab">
-                              <placeholder/>
+                              <object class="GtkLabel" id="opt_proj_label">
+                                <property name="visible">True</property>
+                                <property name="can_focus">False</property>
+                                <property name="label" translatable="yes">Proj.</property>
+                              </object>
+                              <packing>
+                                <property name="position">2</property>
+                                <property name="tab_fill">False</property>
+                              </packing>
                             </child>
                           </object>
                           <packing>

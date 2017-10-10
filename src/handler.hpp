@@ -57,6 +57,13 @@ extern "C" G_MODULE_EXPORT void btn_clip_clk(GtkWidget *widget,
   lclip = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(btn));
 }
 
+extern "C" G_MODULE_EXPORT void btn_proj_clk(GtkWidget *widget,
+                                             GtkWidget *btn) {
+  proj_value = (int)gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget)) *
+               gtk_range_get_value(GTK_RANGE(btn));
+  update();
+}
+
 std::vector<double> get_range_elements(const std::vector<std::string> &elems) {
   std::vector<double> values;
   for (auto &e : elems) {
