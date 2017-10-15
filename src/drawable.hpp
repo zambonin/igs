@@ -2,7 +2,7 @@
 #define DRAWABLE_HPP
 
 #include "structures.hpp"
-
+#include "utils.hpp"
 #include <list>
 #include <numeric>
 #include <string>
@@ -36,6 +36,8 @@ public:
 
   const std::string name{};
   std::list<coord> orig{}, scn{};
+
+  int type = 0;
   matrix<int> faces;
 };
 
@@ -64,7 +66,9 @@ public:
 class line : public drawable {
 public:
   line(const std::string &n, const std::list<coord> &cs, bool clip = false)
-      : drawable(n, cs), clip_with_lb(clip) {}
+      : drawable(n, cs), clip_with_lb(clip) {
+    drawable::type = 1;
+  }
 
   void draw(cairo_t *cr, const std::list<coord> &points) override {
     auto it = std::begin(points), end = --std::end(points);
@@ -204,11 +208,15 @@ public:
 class polygon : public drawable {
 public:
   polygon(const std::string &n, const std::list<coord> &cs, bool _fill = false)
-      : drawable(n, cs), fill(_fill) {}
+      : drawable(n, cs), fill(_fill) {
+    drawable::type = 1;
+  }
 
   polygon(const std::string &n, const std::list<coord> &cs,
           const matrix<int> &f, bool _fill = false)
-      : drawable(n, cs, f), fill(_fill) {}
+      : drawable(n, cs, f), fill(_fill) {
+    drawable::type = 1;
+  }
 
   void draw(cairo_t *cr, const std::list<coord> &points) override {
     auto it = std::begin(points), end = --std::end(points);
@@ -281,11 +289,23 @@ public:
   bool fill{false};
 };
 
-class curve : public line {
+class curve : public polygon {
 public:
-  curve(const std::string &name, const std::list<coord> &cs, bool cm,
+  curve(const std::string &name, const std::list<coord> &cs, bool cm = false,
         double _step = 1000)
-      : line(name, cs, cm), step(_step) {}
+      : polygon(name, cs, cm), step(_step) {
+    drawable::type = 2;
+  }
+
+  void draw(cairo_t *cr, const std::list<coord> &points) override {
+
+    auto it = std::begin(points), end = --std::end(points);
+    cairo_move_to(cr, (*it).x, (*it).y);
+    while (it++ != end) {
+      cairo_line_to(cr, (*it).x, (*it).y);
+    }
+    cairo_stroke(cr);
+  }
 
   coord line_inters(const coord &c1, const coord &c2, const coord &c3,
                     const coord &c4) {
@@ -347,7 +367,7 @@ public:
     }
     return coords;
   }
-
+  const matrix<int> lines;
   double step{0};
 };
 
@@ -380,6 +400,8 @@ public:
       }
     }
     scn = orig;
+    drawable::faces = matrix<int>(1, orig.size());
+    std::iota(drawable::faces[0].begin(), drawable::faces[0].end(), 1);
   }
 };
 
@@ -428,6 +450,8 @@ public:
       forward_diff(x, deltaX, deltaX2, deltaX3, y, deltaY, deltaY2, deltaY3);
     }
     scn = orig;
+    drawable::faces = matrix<int>(1, orig.size());
+    std::iota(drawable::faces[0].begin(), drawable::faces[0].end(), 1);
   }
 
   void forward_diff(double _x, double deltaX, double deltaX2, double deltaX3,
@@ -448,6 +472,265 @@ public:
       _y = y;
     }
   }
+};
+
+class bicubicSurface : public curve {
+public:
+  bicubicSurface(std::string name, const std::list<coord> &cs, bool cm,
+                 double step)
+      : curve(name, cs, cm, step) {
+    std::vector<coord> coords;
+    coords.assign(std::begin(orig), std::end(orig));
+    orig.clear();
+    double delta_s = 1.0 / (step - 1);
+    double delta_t = 1.0 / (step - 1);
+
+    matrix<double> b(
+        {{-1, 3, -3, 1}, {3, -6, 3, 0}, {-3, 3, 0, 0}, {1, 0, 0, 0}});
+
+    for (int i = 0; i < (int)(coords.size() / 16); ++i) {
+
+      matrix<double> aX({{coords[i * 16].x, coords[i * 16 + 1].x,
+                          coords[i * 16 + 2].x, coords[i * 16 + 3].x},
+                         {coords[i * 16 + 4].x, coords[i * 16 + 5].x,
+                          coords[i * 16 + 6].x, coords[i * 16 + 7].x},
+                         {coords[i * 16 + 8].x, coords[i * 16 + 9].x,
+                          coords[i * 16 + 10].x, coords[i * 16 + 11].x},
+                         {coords[i * 16 + 12].x, coords[i * 16 + 13].x,
+                          coords[i * 16 + 14].x, coords[i * 16 + 15].x}});
+
+      matrix<double> aY({{coords[i * 16].y, coords[i * 16 + 1].y,
+                          coords[i * 16 + 2].y, coords[i * 16 + 3].y},
+                         {coords[i * 16 + 4].y, coords[i * 16 + 5].y,
+                          coords[i * 16 + 6].y, coords[i * 16 + 7].y},
+                         {coords[i * 16 + 8].y, coords[i * 16 + 9].y,
+                          coords[i * 16 + 10].y, coords[i * 16 + 11].y},
+                         {coords[i * 16 + 12].y, coords[i * 16 + 13].y,
+                          coords[i * 16 + 14].y, coords[i * 16 + 15].y}});
+
+      matrix<double> aZ({{coords[i * 16].z, coords[i * 16 + 1].z,
+                          coords[i * 16 + 2].z, coords[i * 16 + 3].z},
+                         {coords[i * 16 + 4].z, coords[i * 16 + 5].z,
+                          coords[i * 16 + 6].z, coords[i * 16 + 7].z},
+                         {coords[i * 16 + 8].z, coords[i * 16 + 9].z,
+                          coords[i * 16 + 10].z, coords[i * 16 + 11].z},
+                         {coords[i * 16 + 12].z, coords[i * 16 + 13].z,
+                          coords[i * 16 + 14].z, coords[i * 16 + 15].z}});
+      // matrix<double> aX({  {-1, 0, 1, 2},
+      //     {-1, 0, 1, 2},
+      //     {-1, 0, 1, 2},
+      //     {-1, 0, 1, 2}});
+      //
+      // matrix<double> aY({  {3, 3, 3, 3},
+      //     {3, -2, -2, 3},
+      //     {3, -2, -2, 3},
+      //     {3, 3, 3, 3} });
+      //
+      // matrix<double> aZ({  {1, 1, 1, 1},
+      //     {2, 2, 2, 2},
+      //     {3, 3, 3, 3},
+      //     {4, 4, 4, 4} });
+      //
+      // Calc coefs
+      matrix<double> cX = b * aX * b;
+      matrix<double> cY = b * aY * b;
+      matrix<double> cZ = b * aZ * b;
+
+      // Create Delta Matrices
+      matrix<double> eS(
+          {{0, 0, 0, 1},
+           {delta_s * delta_s * delta_s, delta_s * delta_s, delta_s, 0},
+           {6 * delta_s * delta_s * delta_s, 2 * delta_s * delta_s, 0, 0},
+           {6 * delta_s * delta_s * delta_s, 0, 0, 0}});
+
+      matrix<double> eT(
+          {{0, 0, 0, 1},
+           {delta_t * delta_t * delta_t, delta_t * delta_t, delta_t, 0},
+           {6 * delta_t * delta_t * delta_t, 2 * delta_t * delta_t, 0, 0},
+           {6 * delta_t * delta_t * delta_t, 0, 0, 0}});
+
+      matrix<double> eTT = transpose(eT);
+      // Create Foward Diff
+      matrix<double> ddx = eS * cX * eTT;
+      matrix<double> ddy = eS * cY * eTT;
+      matrix<double> ddz = eS * cZ * eTT;
+
+      for (int i = 0; i < step; ++i) {
+        forward_diff(step, (ddx[0])[0], (ddx[0])[1], (ddx[0])[2], (ddx[0])[3],
+                     (ddy[0])[0], (ddy[0])[1], (ddy[0])[2], (ddy[0])[3],
+                     (ddz[0])[0], (ddz[0])[1], (ddz[0])[2], (ddz[0])[3]);
+
+        (ddx[0])[0] = (ddx[0])[0] + (ddx[1])[0];
+        (ddx[0])[1] = (ddx[0])[1] + (ddx[1])[1];
+        (ddx[0])[2] = (ddx[0])[2] + (ddx[1])[2];
+        (ddx[0])[3] = (ddx[0])[3] + (ddx[1])[3];
+        (ddy[0])[0] = (ddy[0])[0] + (ddy[1])[0];
+        (ddy[0])[1] = (ddy[0])[1] + (ddy[1])[1];
+        (ddy[0])[2] = (ddy[0])[2] + (ddy[1])[2];
+        (ddy[0])[3] = (ddy[0])[3] + (ddy[1])[3];
+        (ddz[0])[0] = (ddz[0])[0] + (ddz[1])[0];
+        (ddz[0])[1] = (ddz[0])[1] + (ddz[1])[1];
+        (ddz[0])[2] = (ddz[0])[2] + (ddz[1])[2];
+        (ddz[0])[3] = (ddz[0])[3] + (ddz[1])[3];
+        // ddy[0][0] =  ddy[0][0]+ddy[1][0]; ddy[0][1] = ddy[0][1]+ddy[1][1];
+        // ddy[0][2] = ddy[0][2]+ddy[1][2]; ddy[0][3] = ddy[0][3]+ddy[1][3];
+        // ddz[0][0] =  ddz[0][0]+ddz[1][0]; ddz[0][1] = ddz[0][1]+ddz[1][1];
+        // ddz[0][2] = ddz[0][2]+ddz[1][2]; ddz[0][3] = ddz[0][3]+ddz[1][3];
+
+        (ddx[1])[0] = (ddx[1])[0] + (ddx[2])[0];
+        (ddx[1])[1] = (ddx[1])[1] + (ddx[2])[1];
+        (ddx[1])[2] = (ddx[1])[2] + (ddx[2])[2];
+        (ddx[1])[3] = (ddx[1])[3] + (ddx[2])[3];
+        (ddy[1])[0] = (ddy[1])[0] + (ddy[2])[0];
+        (ddy[1])[1] = (ddy[1])[1] + (ddy[2])[1];
+        (ddy[1])[2] = (ddy[1])[2] + (ddy[2])[2];
+        (ddy[1])[3] = (ddy[1])[3] + (ddy[2])[3];
+        (ddz[1])[0] = (ddz[1])[0] + (ddz[2])[0];
+        (ddz[1])[1] = (ddz[1])[1] + (ddz[2])[1];
+        (ddz[1])[2] = (ddz[1])[2] + (ddz[2])[2];
+        (ddz[1])[3] = (ddz[1])[3] + (ddz[2])[3];
+
+        // ddx[1][0] =  ddx[1][0]+ddx[2][0]; ddx[1][1] = ddx[1][1]+ddx[2][1];
+        // ddx[1][2] = ddx[1][2]+ddx[2][2]; ddx[1][3] = ddx[1][3]+ddx[2][3];
+        // ddy[1][0] =  ddy[1][0]+ddy[2][0]; ddy[1][1] = ddy[1][1]+ddy[2][1];
+        // ddy[1][2] = ddy[1][2]+ddy[2][2]; ddy[1][3] = ddy[1][3]+ddy[2][3];
+        // ddz[1][0] =  ddz[1][0]+ddz[2][0]; ddz[1][1] = ddz[1][1]+ddz[2][1];
+        // ddz[1][2] = ddz[1][2]+ddz[2][2]; ddz[1][3] = ddz[1][3]+ddz[2][3];
+
+        (ddx[2])[0] = (ddx[2])[0] + (ddx[3])[0];
+        (ddx[2])[1] = (ddx[2])[1] + (ddx[3])[1];
+        (ddx[2])[2] = (ddx[2])[2] + (ddx[3])[2];
+        (ddx[2])[3] = (ddx[2])[3] + (ddx[3])[3];
+        (ddy[2])[0] = (ddy[2])[0] + (ddy[3])[0];
+        (ddy[2])[1] = (ddy[2])[1] + (ddy[3])[1];
+        (ddy[2])[2] = (ddy[2])[2] + (ddy[3])[2];
+        (ddy[2])[3] = (ddy[2])[3] + (ddy[3])[3];
+        (ddz[2])[0] = (ddz[2])[0] + (ddz[3])[0];
+        (ddz[2])[1] = (ddz[2])[1] + (ddz[3])[1];
+        (ddz[2])[2] = (ddz[2])[2] + (ddz[3])[2];
+        (ddz[2])[3] = (ddz[2])[3] + (ddz[3])[3];
+
+        // ddx[2][0] =  ddx[2][0]+ddx[3][0]; ddx[2][1] = ddx[2][1]+ddx[3][1];
+        // ddx[2][2] = ddx[2][2]+ddx[3][2]; ddx[2][3] = ddx[2][3]+ddx[3][3];
+        // ddy[2][0] =  ddy[2][0]+ddy[3][0]; ddy[2][1] = ddy[2][1]+ddy[3][1];
+        // ddy[2][2] = ddy[2][2]+ddy[3][2]; ddy[2][3] = ddy[2][3]+ddy[3][3];
+        // ddz[2][0] =  ddz[2][0]+ddz[3][0]; ddz[2][1] = ddz[2][1]+ddz[3][1];
+        // ddz[2][2] = ddz[2][2]+ddz[3][2]; ddz[2][3] = ddz[2][3]+ddz[3][3];
+      }
+
+      ddx = eS * cX * eTT;
+      ddy = eS * cY * eTT;
+      ddz = eS * cZ * eTT;
+
+      ddx = transpose(ddx);
+      ddy = transpose(ddy);
+      ddz = transpose(ddz);
+
+      for (int i = 0; i < step; ++i) {
+        forward_diff(step, (ddx[0])[0], (ddx[0])[1], (ddx[0])[2], (ddx[0])[3],
+                     (ddy[0])[0], (ddy[0])[1], (ddy[0])[2], (ddy[0])[3],
+                     (ddz[0])[0], (ddz[0])[1], (ddz[0])[2], (ddz[0])[3]);
+
+        (ddx[0])[0] = (ddx[0])[0] + (ddx[1])[0];
+        (ddx[0])[1] = (ddx[0])[1] + (ddx[1])[1];
+        (ddx[0])[2] = (ddx[0])[2] + (ddx[1])[2];
+        (ddx[0])[3] = (ddx[0])[3] + (ddx[1])[3];
+        (ddy[0])[0] = (ddy[0])[0] + (ddy[1])[0];
+        (ddy[0])[1] = (ddy[0])[1] + (ddy[1])[1];
+        (ddy[0])[2] = (ddy[0])[2] + (ddy[1])[2];
+        (ddy[0])[3] = (ddy[0])[3] + (ddy[1])[3];
+        (ddz[0])[0] = (ddz[0])[0] + (ddz[1])[0];
+        (ddz[0])[1] = (ddz[0])[1] + (ddz[1])[1];
+        (ddz[0])[2] = (ddz[0])[2] + (ddz[1])[2];
+        (ddz[0])[3] = (ddz[0])[3] + (ddz[1])[3];
+
+        (ddx[1])[0] = (ddx[1])[0] + (ddx[2])[0];
+        (ddx[1])[1] = (ddx[1])[1] + (ddx[2])[1];
+        (ddx[1])[2] = (ddx[1])[2] + (ddx[2])[2];
+        (ddx[1])[3] = (ddx[1])[3] + (ddx[2])[3];
+        (ddy[1])[0] = (ddy[1])[0] + (ddy[2])[0];
+        (ddy[1])[1] = (ddy[1])[1] + (ddy[2])[1];
+        (ddy[1])[2] = (ddy[1])[2] + (ddy[2])[2];
+        (ddy[1])[3] = (ddy[1])[3] + (ddy[2])[3];
+        (ddz[1])[0] = (ddz[1])[0] + (ddz[2])[0];
+        (ddz[1])[1] = (ddz[1])[1] + (ddz[2])[1];
+        (ddz[1])[2] = (ddz[1])[2] + (ddz[2])[2];
+        (ddz[1])[3] = (ddz[1])[3] + (ddz[2])[3];
+
+        (ddx[2])[0] = (ddx[2])[0] + (ddx[3])[0];
+        (ddx[2])[1] = (ddx[2])[1] + (ddx[3])[1];
+        (ddx[2])[2] = (ddx[2])[2] + (ddx[3])[2];
+        (ddx[2])[3] = (ddx[2])[3] + (ddx[3])[3];
+        (ddy[2])[0] = (ddy[2])[0] + (ddy[3])[0];
+        (ddy[2])[1] = (ddy[2])[1] + (ddy[3])[1];
+        (ddy[2])[2] = (ddy[2])[2] + (ddy[3])[2];
+        (ddy[2])[3] = (ddy[2])[3] + (ddy[3])[3];
+        (ddz[2])[0] = (ddz[2])[0] + (ddz[3])[0];
+        (ddz[2])[1] = (ddz[2])[1] + (ddz[3])[1];
+        (ddz[2])[2] = (ddz[2])[2] + (ddz[3])[2];
+        (ddz[2])[3] = (ddz[2])[3] + (ddz[3])[3];
+      }
+    }
+    scn = orig;
+
+    drawable::faces = matrix<int>(1, orig.size());
+    std::iota(drawable::faces[0].begin(), drawable::faces[0].end(), 1);
+  }
+
+  matrix<double> transpose(const matrix<double> &m) {
+    matrix<double> result(4, 4);
+    for (int i = 0; i < 4; i++) {
+      for (int j = 0; j < 4; j++) {
+        (result[i])[j] = (m[j])[i];
+        // std::cout << (result[i])[j] << std::endl;
+      }
+    }
+    // for (int i = 0; i<4; i++)
+    // {
+    //     for (int j=0; j<4; j++)
+    //     {
+    //         m[i*m.c+j*m.l] = result[i*m.c+j*m.l];
+    //     }
+    // }
+    return result;
+  }
+
+  void forward_diff(int n, double x, double deltaX, double deltaX2,
+                    double deltaX3, double y, double deltaY, double deltaY2,
+                    double deltaY3, double z, double deltaZ, double deltaZ2,
+                    double deltaZ3) {
+    orig.emplace_back(coord(x, y, z));
+    for (int i = 1; i < n; i++) {
+      x = x + deltaX;
+      deltaX = deltaX + deltaX2;
+      deltaX2 = deltaX2 + deltaX3;
+      y = y + deltaY;
+      deltaY = deltaY + deltaY2;
+      deltaY2 = deltaY2 + deltaY3;
+      z = z + deltaZ;
+      deltaZ = deltaZ + deltaZ2;
+      deltaZ2 = deltaZ2 + deltaZ3;
+      orig.emplace_back(coord(x, y, z));
+    } // end for
+    // TODOS OS PONTOS DE UMA CURVA ESTARÃO NO ORIGIN A PARTIR DESTE PONTO
+    // MODIFICAR PARA UMA ESTRUTURA AUXILIAR, COM ISSO DESENHAR CURVA POR CURVA
+  }
+  //     for (int t = 0; t < step; ++t) {
+  //         double x = _x, y = _y;
+  //
+  //         x += deltaX;
+  //         deltaX += deltaX2;
+  //         deltaX2 += deltaX3;
+  //
+  //         y += deltaY;
+  //         deltaY += deltaY2;
+  //         deltaY2 += deltaY3;
+  //
+  //         orig.emplace_back(coord(x, y));
+  //         _x = x;
+  //         _y = y;
+  //     }
+  // }
 };
 
 #endif // DRAWABLE_HPP

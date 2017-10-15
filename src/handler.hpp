@@ -16,6 +16,8 @@ extern "C" G_MODULE_EXPORT void btn_draw_figure_clk(GtkWidget *widget,
       GTK_TOGGLE_BUTTON(gtk_builder_get_object(builder, "spline_obj_radiobtn"));
   GtkToggleButton *lbtn =
       GTK_TOGGLE_BUTTON(gtk_builder_get_object(builder, "lbclip_obj_radiobtn"));
+  GtkToggleButton *surfacebtn =
+      GTK_TOGGLE_BUTTON(gtk_builder_get_object(builder, "surface_obj_check"));
   GtkRange *steps =
       GTK_RANGE(gtk_builder_get_object(builder, "curve_step_scale"));
 
@@ -25,11 +27,16 @@ extern "C" G_MODULE_EXPORT void btn_draw_figure_clk(GtkWidget *widget,
   bool spline = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(sbtn));
   bool fill = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(entry));
   bool clip = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(lbtn));
+  bool surface = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(surfacebtn));
   double step = gtk_range_get_value(steps);
 
   if (!s.empty() && !c.empty() && objects.count(s) == 0) {
     gtk_combo_box_text_append(combo, nullptr, s.c_str());
-    if (curve && spline) {
+    if (surface) {
+      objects.insert(
+          std::make_pair(s, std::unique_ptr<bicubicSurface>(
+                                new bicubicSurface(s, c, clip, step))));
+    } else if (curve && spline) {
       objects.insert(std::make_pair(
           s, std::unique_ptr<bspline>(new bspline(s, c, clip, step))));
     } else if (curve && !spline) {
