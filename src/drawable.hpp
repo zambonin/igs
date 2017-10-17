@@ -489,7 +489,6 @@ public:
         {{-1, 3, -3, 1}, {3, -6, 3, 0}, {-3, 3, 0, 0}, {1, 0, 0, 0}});
 
     for (int i = 0; i < (int)(coords.size() / 16); ++i) {
-
       matrix<double> aX({{coords[i * 16].x, coords[i * 16 + 1].x,
                           coords[i * 16 + 2].x, coords[i * 16 + 3].x},
                          {coords[i * 16 + 4].x, coords[i * 16 + 5].x,
@@ -516,27 +515,11 @@ public:
                           coords[i * 16 + 10].z, coords[i * 16 + 11].z},
                          {coords[i * 16 + 12].z, coords[i * 16 + 13].z,
                           coords[i * 16 + 14].z, coords[i * 16 + 15].z}});
-      // matrix<double> aX({  {-1, 0, 1, 2},
-      //     {-1, 0, 1, 2},
-      //     {-1, 0, 1, 2},
-      //     {-1, 0, 1, 2}});
-      //
-      // matrix<double> aY({  {3, 3, 3, 3},
-      //     {3, -2, -2, 3},
-      //     {3, -2, -2, 3},
-      //     {3, 3, 3, 3} });
-      //
-      // matrix<double> aZ({  {1, 1, 1, 1},
-      //     {2, 2, 2, 2},
-      //     {3, 3, 3, 3},
-      //     {4, 4, 4, 4} });
-      //
-      // Calc coefs
+
       matrix<double> cX = b * aX * b;
       matrix<double> cY = b * aY * b;
       matrix<double> cZ = b * aZ * b;
 
-      // Create Delta Matrices
       matrix<double> eS(
           {{0, 0, 0, 1},
            {delta_s * delta_s * delta_s, delta_s * delta_s, delta_s, 0},
@@ -550,7 +533,6 @@ public:
            {6 * delta_t * delta_t * delta_t, 0, 0, 0}});
 
       matrix<double> eTT = transpose(eT);
-      // Create Foward Diff
       matrix<double> ddx = eS * cX * eTT;
       matrix<double> ddy = eS * cY * eTT;
       matrix<double> ddz = eS * cZ * eTT;
@@ -572,11 +554,6 @@ public:
         (ddz[0])[1] = (ddz[0])[1] + (ddz[1])[1];
         (ddz[0])[2] = (ddz[0])[2] + (ddz[1])[2];
         (ddz[0])[3] = (ddz[0])[3] + (ddz[1])[3];
-        // ddy[0][0] =  ddy[0][0]+ddy[1][0]; ddy[0][1] = ddy[0][1]+ddy[1][1];
-        // ddy[0][2] = ddy[0][2]+ddy[1][2]; ddy[0][3] = ddy[0][3]+ddy[1][3];
-        // ddz[0][0] =  ddz[0][0]+ddz[1][0]; ddz[0][1] = ddz[0][1]+ddz[1][1];
-        // ddz[0][2] = ddz[0][2]+ddz[1][2]; ddz[0][3] = ddz[0][3]+ddz[1][3];
-
         (ddx[1])[0] = (ddx[1])[0] + (ddx[2])[0];
         (ddx[1])[1] = (ddx[1])[1] + (ddx[2])[1];
         (ddx[1])[2] = (ddx[1])[2] + (ddx[2])[2];
@@ -589,14 +566,6 @@ public:
         (ddz[1])[1] = (ddz[1])[1] + (ddz[2])[1];
         (ddz[1])[2] = (ddz[1])[2] + (ddz[2])[2];
         (ddz[1])[3] = (ddz[1])[3] + (ddz[2])[3];
-
-        // ddx[1][0] =  ddx[1][0]+ddx[2][0]; ddx[1][1] = ddx[1][1]+ddx[2][1];
-        // ddx[1][2] = ddx[1][2]+ddx[2][2]; ddx[1][3] = ddx[1][3]+ddx[2][3];
-        // ddy[1][0] =  ddy[1][0]+ddy[2][0]; ddy[1][1] = ddy[1][1]+ddy[2][1];
-        // ddy[1][2] = ddy[1][2]+ddy[2][2]; ddy[1][3] = ddy[1][3]+ddy[2][3];
-        // ddz[1][0] =  ddz[1][0]+ddz[2][0]; ddz[1][1] = ddz[1][1]+ddz[2][1];
-        // ddz[1][2] = ddz[1][2]+ddz[2][2]; ddz[1][3] = ddz[1][3]+ddz[2][3];
-
         (ddx[2])[0] = (ddx[2])[0] + (ddx[3])[0];
         (ddx[2])[1] = (ddx[2])[1] + (ddx[3])[1];
         (ddx[2])[2] = (ddx[2])[2] + (ddx[3])[2];
@@ -609,13 +578,6 @@ public:
         (ddz[2])[1] = (ddz[2])[1] + (ddz[3])[1];
         (ddz[2])[2] = (ddz[2])[2] + (ddz[3])[2];
         (ddz[2])[3] = (ddz[2])[3] + (ddz[3])[3];
-
-        // ddx[2][0] =  ddx[2][0]+ddx[3][0]; ddx[2][1] = ddx[2][1]+ddx[3][1];
-        // ddx[2][2] = ddx[2][2]+ddx[3][2]; ddx[2][3] = ddx[2][3]+ddx[3][3];
-        // ddy[2][0] =  ddy[2][0]+ddy[3][0]; ddy[2][1] = ddy[2][1]+ddy[3][1];
-        // ddy[2][2] = ddy[2][2]+ddy[3][2]; ddy[2][3] = ddy[2][3]+ddy[3][3];
-        // ddz[2][0] =  ddz[2][0]+ddz[3][0]; ddz[2][1] = ddz[2][1]+ddz[3][1];
-        // ddz[2][2] = ddz[2][2]+ddz[3][2]; ddz[2][3] = ddz[2][3]+ddz[3][3];
       }
 
       ddx = eS * cX * eTT;
@@ -682,16 +644,8 @@ public:
     for (int i = 0; i < 4; i++) {
       for (int j = 0; j < 4; j++) {
         (result[i])[j] = (m[j])[i];
-        // std::cout << (result[i])[j] << std::endl;
       }
     }
-    // for (int i = 0; i<4; i++)
-    // {
-    //     for (int j=0; j<4; j++)
-    //     {
-    //         m[i*m.c+j*m.l] = result[i*m.c+j*m.l];
-    //     }
-    // }
     return result;
   }
 
@@ -711,26 +665,10 @@ public:
       deltaZ = deltaZ + deltaZ2;
       deltaZ2 = deltaZ2 + deltaZ3;
       orig.emplace_back(coord(x, y, z));
-    } // end for
+    }
     // TODOS OS PONTOS DE UMA CURVA ESTARÃO NO ORIGIN A PARTIR DESTE PONTO
     // MODIFICAR PARA UMA ESTRUTURA AUXILIAR, COM ISSO DESENHAR CURVA POR CURVA
   }
-  //     for (int t = 0; t < step; ++t) {
-  //         double x = _x, y = _y;
-  //
-  //         x += deltaX;
-  //         deltaX += deltaX2;
-  //         deltaX2 += deltaX3;
-  //
-  //         y += deltaY;
-  //         deltaY += deltaY2;
-  //         deltaY2 += deltaY3;
-  //
-  //         orig.emplace_back(coord(x, y));
-  //         _x = x;
-  //         _y = y;
-  //     }
-  // }
 };
 
 #endif // DRAWABLE_HPP

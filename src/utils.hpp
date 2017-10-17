@@ -187,17 +187,9 @@ void update() {
         }
       }
     }
-    // for(int f = 0; f < obj.second->faces.size(); ++f){
-    // for (int j = 0; j < obj.second->faces[f].size(); ++j) {
-    // std::cout << obj.second->faces[f][j] << std::endl;
-    // std::cout << pts[obj.second->faces[f][j]-1] << std::endl;
-    // }
-    // }
-    //
+
     if (obj.second->type == 0) {
-
       obj.second->draw(cr, viewport(obj.second->clip(window())));
-
     } else if (obj.second->type == 1) {
       for (size_t f = 0; f < obj.second->faces.size(); ++f) {
         std::list<coord> face;
@@ -213,15 +205,9 @@ void update() {
         for (size_t j = 0; j < obj.second->faces[f].size(); ++j) {
           face.emplace_back(pts[obj.second->faces[f][j] - 1]);
         }
-        // std::cout << "======================================" << std::endl;
-        //   for(auto i : face) {
-        //       std::cout << i << std::endl;
-        //   }
         curve d("", face);
         d.draw(cr, viewport(d.clip(window())));
       }
-      // std::cout<< obj.second->name << std::endl;
-      // obj.second->draw(cr, viewport(obj.second->scn));
     }
   }
 
